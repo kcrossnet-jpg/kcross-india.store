@@ -1,0 +1,530 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>kcrossindia.store</title>
+<style>
+/* Layout: announcement bar, sticky header, hash-routed pages (home, categories, help and company pages).
+   Palette: warm paper neutrals with a rose accent and a deep plum ink. */
+:root {
+  --bg: #fbf7f4;
+  --surface: #ffffff;
+  --ink: #2a1d24;
+  --muted: #7a6670;
+  --line: #ecdfe4;
+  --accent: #b83a6b;
+  --accent-ink: #ffffff;
+  --soft: #f6e6ec;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1218;
+    --surface: #241a21;
+    --ink: #f5ebef;
+    --muted: #b4a0aa;
+    --line: #3a2b34;
+    --accent: #e06a97;
+    --accent-ink: #1a1218;
+    --soft: #33212b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a1218;
+  --surface: #241a21;
+  --ink: #f5ebef;
+  --muted: #b4a0aa;
+  --line: #3a2b34;
+  --accent: #e06a97;
+  --accent-ink: #1a1218;
+  --soft: #33212b;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3 { font-family: "Fraunces", Georgia, "Times New Roman", serif; font-weight: 500; line-height: 1.1; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+
+.wrap { max-width: 1180px; margin: 0 auto; }
+
+/* Announcement */
+.announce {
+  background: var(--ink); color: var(--bg);
+  text-align: center; font-size: 13px; padding-block: 8px;
+  letter-spacing: 0.02em;
+}
+
+/* Header */
+.header {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.header-inner {
+  display: flex; align-items: center; gap: 20px;
+  padding-block: 14px;
+}
+.logo { font-family: "Fraunces", Georgia, serif; font-size: 22px; font-weight: 600; text-decoration: none; letter-spacing: -0.01em; white-space: nowrap; }
+.logo span { color: var(--accent); }
+.nav { display: flex; gap: 18px; margin-left: 12px; }
+.nav a { text-decoration: none; font-size: 14px; color: var(--muted); }
+.nav a:hover { color: var(--ink); }
+.header-tools { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.search {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px;
+  background: var(--surface); min-width: 0; width: 200px;
+}
+.search input { border: 0; background: transparent; outline: none; width: 100%; min-width: 0; font-size: 14px; }
+.cart-btn {
+  border: 1px solid var(--ink); background: transparent; border-radius: 999px;
+  padding: 7px 14px; font-size: 14px; white-space: nowrap;
+}
+.cart-btn b { color: var(--accent); }
+
+/* Hero */
+.hero {
+  display: grid; grid-template-columns: 1.1fr 1fr; gap: 32px; align-items: center;
+  padding-block: 56px 40px;
+}
+.eyebrow { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 14px; }
+.hero h1 { font-size: clamp(38px, 6vw, 64px); }
+.hero h1 em { font-style: italic; color: var(--accent); }
+.lede { margin-top: 18px; color: var(--muted); font-size: 17px; max-width: 46ch; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+.btn {
+  border: 0; border-radius: 999px; padding: 12px 22px; font-size: 15px; font-weight: 600;
+  background: var(--accent); color: var(--accent-ink); text-decoration: none; display: inline-block;
+}
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.hero-art {
+  aspect-ratio: 4 / 5; border-radius: 28px; max-width: 100%;
+  background:
+    radial-gradient(circle at 30% 25%, #f7c9d9 0 18%, transparent 19%),
+    radial-gradient(circle at 70% 70%, #e9a3bf 0 22%, transparent 23%),
+    linear-gradient(160deg, var(--soft), #e3b6c8);
+  position: relative; overflow: hidden;
+}
+.hero-art .badge {
+  position: absolute; left: 20px; bottom: 20px; background: var(--surface); color: var(--ink);
+  border-radius: 16px; padding: 14px 16px; font-size: 14px; box-shadow: 0 8px 24px rgba(42,29,36,.12);
+}
+.hero-art .badge strong { display: block; font-size: 22px; font-family: "Fraunces", Georgia, serif; font-weight: 500; }
+
+/* Trust strip */
+.strip {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  border-block: 1px solid var(--line); padding-block: 18px; margin-bottom: 48px;
+}
+.strip div { font-size: 14px; color: var(--muted); }
+.strip b { display: block; color: var(--ink); font-weight: 600; }
+
+/* Sections */
+.section { padding-block: 24px 56px; }
+.section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.section-head h2 { font-size: clamp(28px, 4vw, 40px); }
+.section-head a { font-size: 14px; color: var(--accent); text-decoration: none; font-weight: 600; }
+
+/* Categories */
+.cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.cat {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+  padding: 22px 18px; text-decoration: none; min-width: 0;
+}
+.cat .dot { width: 34px; height: 34px; border-radius: 50%; margin-bottom: 18px; }
+.cat h3 { font-size: 19px; }
+.cat p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+/* Products */
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.product { min-width: 0; display: flex; flex-direction: column; }
+.thumb {
+  aspect-ratio: 1 / 1.1; border-radius: 18px; margin-bottom: 12px; position: relative;
+  border: 1px solid var(--line);
+}
+.product .tag {
+  position: absolute; top: 10px; left: 10px; background: var(--surface); color: var(--ink);
+  font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 4px 9px; border-radius: 999px;
+}
+.product .brand { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.product h3 { font-family: "Inter", system-ui, sans-serif; font-size: 15px; font-weight: 600; margin-top: 4px; line-height: 1.35; }
+.price-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 10px; }
+.price { font-weight: 700; font-variant-numeric: tabular-nums; }
+.price s { color: var(--muted); font-weight: 400; margin-left: 6px; font-size: 13px; }
+.add {
+  border: 1px solid var(--ink); background: transparent; border-radius: 999px;
+  padding: 6px 12px; font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.add:hover { background: var(--ink); color: var(--bg); }
+.empty { color: var(--muted); }
+
+.t1 { background: linear-gradient(150deg, #f7d6e2, #e7a7c0); }
+.t2 { background: linear-gradient(150deg, #efe2d4, #d8b99b); }
+.t3 { background: linear-gradient(150deg, #dfe8df, #a9c4ab); }
+.t4 { background: linear-gradient(150deg, #e3dcf2, #b3a4d6); }
+
+/* Page heads and prose (categories, help, company pages) */
+.page { padding-block: 48px 64px; }
+.page-head { margin-bottom: 32px; max-width: 60ch; }
+.page-head h1 { font-size: clamp(34px, 5vw, 52px); }
+.page-head .lede { margin-top: 14px; }
+.prose { max-width: 66ch; }
+.prose h2 { font-size: 26px; margin: 36px 0 10px; }
+.prose p { color: var(--ink); margin-top: 12px; }
+.prose ul { padding-left: 20px; margin: 12px 0 0; display: grid; gap: 8px; }
+.prose li { color: var(--ink); }
+.faq { display: grid; gap: 10px; margin-top: 12px; }
+.faq div { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
+.faq b { display: block; margin-bottom: 4px; }
+
+/* Forms */
+.form { display: grid; gap: 14px; max-width: 480px; margin-top: 8px; }
+.form label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+.form input, .form textarea {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 14px;
+  padding: 12px 14px; font-weight: 400; min-width: 0; width: 100%;
+}
+.form textarea { min-height: 120px; resize: vertical; }
+.form .btn { justify-self: start; }
+.msg { font-size: 14px; color: var(--accent); }
+
+/* Newsletter */
+.news {
+  background: var(--ink); color: var(--bg); border-radius: 28px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: center;
+  padding: 44px; margin-bottom: 48px;
+}
+.news h2 { font-size: clamp(28px, 4vw, 38px); }
+.news p { opacity: .8; margin-top: 10px; }
+.news form { display: flex; gap: 10px; flex-wrap: wrap; }
+.news input {
+  flex: 1 1 200px; min-width: 0; padding: 13px 18px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.25); background: transparent; color: inherit;
+}
+.news input::placeholder { color: rgba(255,255,255,.6); }
+.news .btn { background: var(--accent); color: #fff; }
+.news .note { font-size: 12px; opacity: .65; margin-top: 10px; flex-basis: 100%; }
+.news .msg { color: #ffd6e5; }
+
+/* Footer */
+.footer { border-top: 1px solid var(--line); padding-block: 40px 28px; font-size: 14px; color: var(--muted); }
+.footer-grid { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: 24px; }
+.footer h4 { margin: 0 0 10px; font-size: 13px; color: var(--ink); text-transform: uppercase; letter-spacing: .08em; }
+.footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.footer a { text-decoration: none; }
+.footer a:hover { color: var(--ink); }
+.legal { margin-top: 32px; font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 999px; font-size: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2); opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 20;
+}
+.toast.show { opacity: 1; }
+
+/* Responsive */
+@media (max-width: 960px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .cats { grid-template-columns: repeat(2, 1fr); }
+  .nav { display: none; }
+  .search { width: 160px; }
+}
+@media (max-width: 680px) {
+  .hero { grid-template-columns: 1fr; padding-block: 32px 24px; }
+  .hero-art { aspect-ratio: 4 / 3; }
+  .strip { grid-template-columns: 1fr 1fr; }
+  .news { grid-template-columns: 1fr; padding: 28px 22px; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .header-inner { gap: 10px; }
+  .search { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { transition: none; }
+}
+</style>
+
+<div class="announce">Free shipping on orders over ₹999 · Easy 30-day returns</div>
+
+<header class="header">
+  <div class="wrap header-inner">
+    <a class="logo" href="#">kcrossindia<span>.store</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="#skincare">Skincare</a>
+      <a href="#makeup">Makeup</a>
+      <a href="#hair">Hair</a>
+      <a href="#fragrance">Fragrance</a>
+    </nav>
+    <div class="header-tools">
+      <label class="search">
+        <span aria-hidden="true">⌕</span>
+        <input type="search" placeholder="Search products" aria-label="Search products">
+      </label>
+      <button class="cart-btn" id="cartBtn" aria-live="polite">Bag (<b id="cartCount">0</b>)</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="app"></main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="logo" href="#">kcrossindia<span>.store</span></a>
+        <p style="margin-top:10px;max-width:32ch">Simple, kind beauty for everyday routines.</p>
+      </div>
+      <div><h4>Shop</h4><ul><li><a href="#skincare">Skincare</a></li><li><a href="#makeup">Makeup</a></li><li><a href="#hair">Hair</a></li><li><a href="#fragrance">Fragrance</a></li></ul></div>
+      <div><h4>Help</h4><ul><li><a href="#track-order">Track order</a></li><li><a href="#returns">Returns</a></li><li><a href="#shipping">Shipping</a></li><li><a href="#contact">Contact</a></li></ul></div>
+      <div><h4>About</h4><ul><li><a href="#our-story">Our story</a></li><li><a href="#ingredients">Ingredients</a></li><li><a href="#careers">Careers</a></li></ul></div>
+    </div>
+    <div class="legal"><span>© 2026 kcrossindia.store. All rights reserved.</span><span>Privacy · Terms · Accessibility</span></div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const products = [
+  { id: 1, cat: "skincare", brand: "Lumé", name: "Dew Cleansing Gel", price: 649, was: 799, tag: "Bestseller", cls: "t1" },
+  { id: 2, cat: "skincare", brand: "Lumé", name: "Barrier Repair Serum", price: 1199, was: null, tag: "New", cls: "t2" },
+  { id: 3, cat: "makeup", brand: "Petal & Co", name: "Velvet Matte Lip Tint", price: 499, was: 599, tag: "Sale", cls: "t3" },
+  { id: 4, cat: "makeup", brand: "Petal & Co", name: "Soft Focus Base", price: 899, was: null, tag: "", cls: "t4" },
+  { id: 5, cat: "hair", brand: "Root Lab", name: "Scalp Balance Shampoo", price: 749, was: 899, tag: "Sale", cls: "t2" },
+  { id: 6, cat: "hair", brand: "Root Lab", name: "Overnight Hair Mask", price: 849, was: null, tag: "Bestseller", cls: "t3" },
+  { id: 7, cat: "fragrance", brand: "Ember House", name: "Cedar Night Eau de Parfum", price: 1499, was: null, tag: "New", cls: "t4" },
+  { id: 8, cat: "fragrance", brand: "Ember House", name: "Fresh Linen Hair Mist", price: 399, was: 459, tag: "", cls: "t1" }
+];
+
+const fmt = n => "₹" + n.toLocaleString("en-IN");
+const app = document.getElementById("app");
+let count = 0;
+
+function gridHTML(list) {
+  if (!list.length) return `<p class="empty">No products here yet.</p>`;
+  return `<div class="grid">` + list.map(p => `
+    <article class="product">
+      <div class="thumb ${p.cls}">${p.tag ? `<span class="tag">${p.tag}</span>` : ""}</div>
+      <div class="brand">${p.brand}</div>
+      <h3>${p.name}</h3>
+      <div class="price-row">
+        <span class="price">${fmt(p.price)}${p.was ? `<s>${fmt(p.was)}</s>` : ""}</span>
+        <button class="add" data-id="${p.id}" aria-label="Add ${p.name} to bag">Add</button>
+      </div>
+    </article>`).join("") + `</div>`;
+}
+
+function catPage(title, text, cat) {
+  return `
+    <section class="page">
+      <div class="page-head"><p class="eyebrow">Shop</p><h1>${title}</h1><p class="lede">${text}</p></div>
+      ${gridHTML(products.filter(p => p.cat === cat))}
+    </section>`;
+}
+
+function infoPage(eyebrow, title, body) {
+  return `
+    <section class="page">
+      <div class="page-head"><p class="eyebrow">${eyebrow}</p><h1>${title}</h1></div>
+      <div class="prose">${body}</div>
+    </section>`;
+}
+
+const pages = {
+  home: () => `
+    <section class="hero">
+      <div>
+        <p class="eyebrow">New season edit</p>
+        <h1>Everyday glow, <em>made simple.</em></h1>
+        <p class="lede">Gentle formulas for skin, hair and makeup that work with your routine, not against it. Dermatologist tested and cruelty free.</p>
+        <div class="cta-row">
+          <a class="btn" href="#skincare">Shop skincare</a>
+          <a class="btn ghost" href="#makeup">Explore makeup</a>
+        </div>
+      </div>
+      <div class="hero-art" role="img" aria-label="Soft pink product illustration">
+        <div class="badge"><strong>Up to 30% off</strong>Bestsellers this week</div>
+      </div>
+    </section>
+
+    <section class="strip" aria-label="Store highlights">
+      <div><b>Dermatologist tested</b>Safe for sensitive skin</div>
+      <div><b>Cruelty free</b>Never tested on animals</div>
+      <div><b>Free returns</b>Within 30 days</div>
+      <div><b>Pay later</b>Split into 3 easy parts</div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Shop by category</h2></div>
+      <div class="cats">
+        <a class="cat" href="#skincare"><div class="dot t1"></div><h3>Skincare</h3><p>Cleansers, serums, moisturisers</p></a>
+        <a class="cat" href="#makeup"><div class="dot t2"></div><h3>Makeup</h3><p>Base, lips, eyes</p></a>
+        <a class="cat" href="#hair"><div class="dot t3"></div><h3>Hair</h3><p>Shampoo, masks, styling</p></a>
+        <a class="cat" href="#fragrance"><div class="dot t4"></div><h3>Fragrance</h3><p>Eau de parfum and mists</p></a>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="best">
+      <div class="section-head"><h2 id="best">Bestsellers</h2></div>
+      ${gridHTML(products)}
+    </section>
+
+    <section class="news">
+      <div>
+        <h2>Get 15% off your first order</h2>
+        <p>Join the list for new launches, routine tips and early access to sales.</p>
+      </div>
+      <div>
+        <form data-form="news" novalidate>
+          <input type="email" name="email" placeholder="Enter your email" aria-label="Email address" required>
+          <button class="btn" type="submit">Subscribe</button>
+          <span class="note">By subscribing you agree to our privacy policy. Unsubscribe any time.</span>
+        </form>
+        <p class="msg" data-msg hidden></p>
+      </div>
+    </section>`,
+
+  skincare: () => catPage("Skincare", "Cleansers, serums and moisturisers that keep skin calm and comfortable.", "skincare"),
+  makeup: () => catPage("Makeup", "Lightweight base, lip and eye products that look natural and wear well.", "makeup"),
+  hair: () => catPage("Hair", "Gentle shampoos, masks and styling that support a healthy scalp.", "hair"),
+  fragrance: () => catPage("Fragrance", "Eau de parfums and hair mists in warm, fresh and clean notes.", "fragrance"),
+
+  "track-order": () => `
+    <section class="page">
+      <div class="page-head"><p class="eyebrow">Help</p><h1>Track your order</h1><p class="lede">Enter the order number from your confirmation email to see where your parcel is.</p></div>
+      <form class="form" data-form="track" novalidate>
+        <label>Order number<input name="order" placeholder="e.g. LK-204518" required></label>
+        <button class="btn" type="submit">Track order</button>
+        <p class="msg" data-msg hidden></p>
+      </form>
+    </section>`,
+
+  returns: () => infoPage("Help", "Returns", `
+    <p>Changed your mind or the product isn't right for you? You can return unopened items within 30 days of delivery.</p>
+    <h2>How to return</h2>
+    <ul>
+      <li>Start a return from your order history or the link in your confirmation email.</li>
+      <li>Pack the item in its original packaging with the return label we send you.</li>
+      <li>Refunds go back to your original payment method within 5 to 7 working days of arrival.</li>
+    </ul>
+    <h2>What we can't take back</h2>
+    <p>For hygiene reasons, opened makeup and used skincare can't be returned unless the product is faulty.</p>`),
+
+  shipping: () => infoPage("Help", "Shipping", `
+    <p>We ship across India. Orders are packed within one working day.</p>
+    <h2>Delivery times</h2>
+    <ul>
+      <li>Metro cities: 2 to 4 working days.</li>
+      <li>Rest of India: 4 to 7 working days.</li>
+    </ul>
+    <h2>Shipping cost</h2>
+    <p>Shipping is free on orders over ₹999. Below that, a flat fee applies at checkout.</p>`),
+
+  contact: () => `
+    <section class="page">
+      <div class="page-head"><p class="eyebrow">Help</p><h1>Contact us</h1><p class="lede">Questions about a product, an order or your skin? Send us a message and our team will reply within two working days.</p></div>
+      <form class="form" data-form="contact" novalidate>
+        <label>Name<input name="name" required></label>
+        <label>Email<input type="email" name="email" required></label>
+        <label>Message<textarea name="message" required></textarea></label>
+        <button class="btn" type="submit">Send message</button>
+        <p class="msg" data-msg hidden></p>
+      </form>
+    </section>`,
+
+  "our-story": () => infoPage("Company", "Our story", `
+    <p>kcrossindia.store started with a simple idea: everyday beauty should be kind to your skin, honest about what it contains, and easy to use.</p>
+    <h2>What we believe</h2>
+    <ul>
+      <li>Fewer ingredients, chosen for a reason.</li>
+      <li>Products tested on sensitive skin before they reach you.</li>
+      <li>Prices that make sense for a daily routine.</li>
+    </ul>`),
+
+  ingredients: () => infoPage("Company", "Ingredients", `
+    <p>We publish the full ingredient list for every product on its page, and we avoid a list of common irritants in every formula.</p>
+    <h2>Our standards</h2>
+    <ul>
+      <li>No added synthetic fragrance in skincare.</li>
+      <li>Preservatives chosen for gentleness and proven safety.</li>
+      <li>Every formula is dermatologist tested and cruelty free.</li>
+    </ul>`),
+
+  careers: () => infoPage("Company", "Careers", `
+    <p>We are a small team that cares about good products and kind customer service. We don't have open roles listed right now.</p>
+    <p>If you'd like to work with us, send a short note and your CV through the contact page and we'll keep it on file.</p>`)
+};
+
+const titles = { track: "Track order", news: "Subscribed" };
+
+function render() {
+  const name = location.hash.slice(1) || "home";
+  const key = pages[name] ? name : "home";
+  app.innerHTML = pages[key]();
+  window.scrollTo(0, 0);
+}
+
+const toast = document.getElementById("toast");
+let toastTimer;
+function showToast(text) {
+  toast.textContent = text;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+app.addEventListener("click", e => {
+  const btn = e.target.closest(".add");
+  if (!btn) return;
+  const p = products.find(x => x.id === Number(btn.dataset.id));
+  count++;
+  document.getElementById("cartCount").textContent = count;
+  showToast(`Added ${p.name} to your bag`);
+});
+
+app.addEventListener("submit", e => {
+  const form = e.target.closest("form[data-form]");
+  if (!form) return;
+  e.preventDefault();
+  const type = form.dataset.form;
+  const msg = form.querySelector("[data-msg]");
+  const show = (text, ok = true) => { msg.hidden = false; msg.textContent = text; msg.style.color = ok ? "" : ""; };
+
+  if (type === "news") {
+    const email = form.email.value.trim();
+    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    show(ok ? "Thanks for subscribing. Check your inbox for your code." : "Please enter a valid email address.");
+    if (ok) form.reset();
+  } else if (type === "track") {
+    const order = form.order.value.trim();
+    show(order ? `We're looking up order ${order}. Tracking updates will be sent to your email.` : "Enter your order number to track your order.");
+  } else if (type === "contact") {
+    const ok = form.name.value.trim() && form.email.value.trim() && form.message.value.trim();
+    show(ok ? "Thanks, we've got your message and will reply within two working days." : "Please fill in all fields.");
+    if (ok) form.reset();
+  }
+});
+
+document.getElementById("cartBtn").addEventListener("click", () => {
+  showToast(count ? `${count} item${count > 1 ? "s" : ""} in your bag` : "Your bag is empty");
+});
+
+window.addEventListener("hashchange", render);
+render();
+</script>
+
+</body></html>

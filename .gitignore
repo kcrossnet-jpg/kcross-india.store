@@ -1,0 +1,13 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+dev-dist/
+.playwright-cli/
+firebase-applet-config.json
+firebase-applet-config.local.json
+!firebase-applet-config.example.json

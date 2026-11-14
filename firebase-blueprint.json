@@ -1,0 +1,331 @@
+{
+  "entities": {
+    "CustomerAccount": {
+      "title": "CustomerAccount",
+      "description": "Basic customer identity record keyed by Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the customer.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Customer display name.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Optional profile avatar URL.",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-update timestamp."
+        }
+      },
+      "required": ["uid", "displayName", "createdAt", "updatedAt"]
+    },
+    "CustomerPrivateProfile": {
+      "title": "CustomerPrivateProfile",
+      "description": "PII-isolated private profile storing customer email, default delivery address, and synced wishlist IDs.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the customer.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Customer email address.",
+          "maxLength": 160
+        },
+        "defaultAddress": {
+          "type": "string",
+          "description": "Saved street address for express checkout.",
+          "maxLength": 300
+        },
+        "defaultCity": {
+          "type": "string",
+          "description": "Saved city name.",
+          "maxLength": 80
+        },
+        "defaultPinCode": {
+          "type": "string",
+          "description": "Optional 6-digit Indian PIN code or empty string.",
+          "maxLength": 6,
+          "pattern": "^$|^[1-9][0-9]{5}$"
+        },
+        "wishlistIds": {
+          "type": "array",
+          "description": "Bounded list of product IDs saved by the customer."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["uid", "email", "defaultAddress", "defaultCity", "defaultPinCode", "wishlistIds", "updatedAt"]
+    },
+    "CustomerOrder": {
+      "title": "CustomerOrder",
+      "description": "Order placed by an authenticated customer.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "orderNumber": {
+          "type": "string",
+          "description": "Human-readable order code.",
+          "minLength": 3,
+          "maxLength": 32,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Confirmed", "Packed", "In Transit", "Delivered"],
+          "description": "Fulfillment status."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["UPI", "Card", "COD"],
+          "description": "Payment method chosen at checkout."
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Recipient full name.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Order receipt email.",
+          "maxLength": 160
+        },
+        "address": {
+          "type": "string",
+          "description": "Delivery street address.",
+          "minLength": 5,
+          "maxLength": 300
+        },
+        "city": {
+          "type": "string",
+          "description": "Delivery city.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "pinCode": {
+          "type": "string",
+          "description": "6-digit Indian PIN code.",
+          "minLength": 6,
+          "maxLength": 6,
+          "pattern": "^[1-9][0-9]{5}$"
+        },
+        "itemsSummary": {
+          "type": "string",
+          "description": "Concise summary of line items purchased.",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "itemCount": {
+          "type": "integer",
+          "description": "Total unit quantity in the order."
+        },
+        "subtotal": {
+          "type": "number",
+          "description": "Order subtotal in INR."
+        },
+        "couponCode": {
+          "type": "string",
+          "description": "Optional promo code applied.",
+          "maxLength": 32
+        },
+        "couponDiscount": {
+          "type": "number",
+          "description": "Discount amount in INR."
+        },
+        "shippingFee": {
+          "type": "number",
+          "description": "Shipping fee in INR."
+        },
+        "total": {
+          "type": "number",
+          "description": "Final order total in INR."
+        },
+        "estimatedDelivery": {
+          "type": "string",
+          "description": "Estimated delivery window.",
+          "maxLength": 140
+        },
+        "placedAt": {
+          "type": "string",
+          "description": "ISO timestamp when order was placed.",
+          "maxLength": 40
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "orderNumber",
+        "status",
+        "paymentMethod",
+        "customerName",
+        "email",
+        "address",
+        "city",
+        "pinCode",
+        "itemsSummary",
+        "itemCount",
+        "subtotal",
+        "couponDiscount",
+        "shippingFee",
+        "total",
+        "estimatedDelivery",
+        "placedAt",
+        "createdAt"
+      ]
+    },
+    "CustomerBooking": {
+      "title": "CustomerBooking",
+      "description": "In-store beauty studio appointment booked by an authenticated customer.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "bookingCode": {
+          "type": "string",
+          "description": "Appointment code.",
+          "minLength": 3,
+          "maxLength": 32,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "serviceId": {
+          "type": "string",
+          "description": "Service identifier.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "serviceName": {
+          "type": "string",
+          "description": "Service title.",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "storeId": {
+          "type": "string",
+          "description": "Studio store identifier.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "storeName": {
+          "type": "string",
+          "description": "Studio store name.",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "date": {
+          "type": "string",
+          "description": "Preferred appointment date (YYYY-MM-DD).",
+          "minLength": 8,
+          "maxLength": 20
+        },
+        "timeSlot": {
+          "type": "string",
+          "description": "Appointment time slot.",
+          "minLength": 3,
+          "maxLength": 24
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Customer full name.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Customer email address.",
+          "maxLength": 160
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional skin or hair consultation notes.",
+          "maxLength": 400
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Confirmed", "Completed"],
+          "description": "Appointment status."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "bookingCode",
+        "serviceId",
+        "serviceName",
+        "storeId",
+        "storeName",
+        "date",
+        "timeSlot",
+        "customerName",
+        "email",
+        "notes",
+        "status",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/CustomerAccount" },
+      "description": "Owner-only customer identity document."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/CustomerPrivateProfile" },
+      "description": "Owner-only PII-isolated delivery profile and wishlist."
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/CustomerOrder" },
+      "description": "Owner-only customer order history."
+    },
+    "/users/{userId}/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/CustomerBooking" },
+      "description": "Owner-only customer studio appointments."
+    }
+  }
+}

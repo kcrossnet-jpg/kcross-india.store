@@ -1,0 +1,8 @@
+{
+  "name": "kcross india store",
+  "description": "Curated beauty, skincare, haircare, fragrance, appliances, and in-store studio services across India.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
