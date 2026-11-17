@@ -197,8 +197,8 @@ export const ProductArt: React.FC<ProductArtProps> = ({
           <g>
             <rect x="28" y="52" width="124" height="78" rx="10" fill="#1E161A" />
             <rect x="36" y="60" width="108" height="62" rx="6" stroke="#C41E68" strokeOpacity="0.65" strokeWidth="1.2" />
-            <text x="90" y="88" textAnchor="middle" fill="#FAF8F6" fontSize="11.5" fontFamily="Fraunces, Georgia, serif">
-              kcross india
+            <text x="90" y="88" textAnchor="middle" fill="#FAF8F6" fontSize="9.5" fontFamily="Playfair Display, Georgia, serif">
+              kcross india store
             </text>
             <text x="90" y="106" textAnchor="middle" fill="#E99CBE" fontSize="7" letterSpacing="1.6">
               GIFT CARD

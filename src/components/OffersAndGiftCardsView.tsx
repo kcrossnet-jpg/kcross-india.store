@@ -158,7 +158,7 @@ export const GiftCardsView: React.FC<GiftCardsViewProps> = ({ onAddGiftCardToBag
           Instant Digital &amp; Studio Redemption
         </p>
         <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1E161A]">
-          kcross india Gift Cards
+          kcross india store Gift Cards
         </h1>
         <p className="mt-1.5 text-sm text-[#6E5F66] max-w-[60ch]">
           Redeemable across all online products and in-store studio services with zero expiry fees
@@ -170,7 +170,7 @@ export const GiftCardsView: React.FC<GiftCardsViewProps> = ({ onAddGiftCardToBag
         <div className="lg:col-span-5 rounded-2xl border border-[#EAE4E0] bg-white p-6">
           <ProductArt
             form="giftcard"
-            brand="kcross india"
+            brand="kcross india store"
             surfaceTone="#F6ECEF"
             accentTone="#C41E68"
             className="aspect-[4/3] w-full rounded-xl"

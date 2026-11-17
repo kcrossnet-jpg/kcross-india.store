@@ -128,7 +128,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
             Customer Account
           </p>
           <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1E161A]">
-            Sign in to kcross india
+            Sign in to kcross india store
           </h1>
           <p className="mt-1.5 text-sm text-[#6E5F66] max-w-[60ch]">
             Access your saved beauty wishlist, synced pan-India orders, studio consultations, and
@@ -295,7 +295,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
               Customer Account
             </p>
             <h1 className="mt-0.5 font-display text-2xl sm:text-3xl font-medium text-[#1E161A] truncate">
-              {profile?.displayName || authUser.displayName || 'kcross Customer'}
+              {profile?.displayName || authUser.displayName || 'kcross india store Customer'}
             </h1>
             <p className="text-xs sm:text-sm text-[#6E5F66] truncate">{authUser.email}</p>
           </div>

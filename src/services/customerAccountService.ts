@@ -40,7 +40,7 @@ export async function ensureCustomerDocs(
   const userRef = doc(db, 'users', uid);
   const privateRef = doc(db, 'users', uid, 'private', 'profile');
 
-  const safeDisplayName = (user.displayName || user.email?.split('@')[0] || 'kcross Customer')
+  const safeDisplayName = (user.displayName || user.email?.split('@')[0] || 'kcross india store Customer')
     .trim()
     .slice(0, 120);
   const safePhoto = (user.photoURL || '').trim().slice(0, 500);
@@ -227,7 +227,7 @@ export function subscribeCustomerData(
 ): () => void {
   if (!db) return () => {};
   const uid = user.uid;
-  let accountName = user.displayName || user.email?.split('@')[0] || 'kcross Customer';
+  let accountName = user.displayName || user.email?.split('@')[0] || 'kcross india store Customer';
   let accountPhoto = user.photoURL || undefined;
   let privateData: Partial<CustomerProfile> = {
     email: user.email || '',
@@ -312,7 +312,7 @@ export function subscribeCustomerData(
             {
               key: `cloud::${docSnap.id}`,
               productId: 'cloud-summary',
-              brand: 'kcross india',
+              brand: 'kcross india store',
               name: summary,
               variantLabel: `${count} item${count === 1 ? '' : 's'}`,
               price: Number(d.subtotal || d.total || 0),

@@ -2,17 +2,34 @@ import { FirebaseApp, initializeApp } from 'firebase/app';
 import { Auth, getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { doc, Firestore, getDocFromServer, getFirestore } from 'firebase/firestore';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
+const cleanVal = (val?: string): string => {
+  if (!val) return '';
+  const trimmed = val.trim();
+  if (!trimmed || trimmed === '0' || trimmed === 'undefined' || trimmed === 'null') return '';
+  return trimmed;
 };
 
-const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || '';
+const localFallback = __LOCAL_FIREBASE_CONFIG__ || {};
+
+const firebaseConfig = {
+  apiKey: cleanVal(import.meta.env.VITE_FIREBASE_API_KEY) || cleanVal(localFallback.apiKey),
+  authDomain:
+    cleanVal(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN) || cleanVal(localFallback.authDomain),
+  projectId:
+    cleanVal(import.meta.env.VITE_FIREBASE_PROJECT_ID) || cleanVal(localFallback.projectId),
+  storageBucket:
+    cleanVal(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET) || cleanVal(localFallback.storageBucket),
+  messagingSenderId:
+    cleanVal(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
+    cleanVal(localFallback.messagingSenderId),
+  appId: cleanVal(import.meta.env.VITE_FIREBASE_APP_ID) || cleanVal(localFallback.appId),
+  measurementId:
+    cleanVal(import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) || cleanVal(localFallback.measurementId),
+};
+
+const firestoreDatabaseId =
+  cleanVal(import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
+  cleanVal(localFallback.firestoreDatabaseId);
 
 export const isFirebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId

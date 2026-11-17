@@ -50,7 +50,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
     setNewsletterStatus({
       ok: true,
-      text: 'Welcome to kcross india. Use code GLOW15 at checkout for 15% off your first order.',
+      text: 'Welcome to kcross india store. Use code GLOW15 at checkout for 15% off your first order.',
     });
     setNewsletterEmail('');
   };

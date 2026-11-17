@@ -51,13 +51,13 @@ const MobileAppGuideModal: React.FC<MobileAppGuideModalProps> = ({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-[#C41E68]">
-              kcross india Mobile App
+              kcross india store Mobile App
             </p>
             <h2
               id="mobile-app-guide-title"
               className="mt-1 font-display text-2xl font-medium text-[#1E161A]"
             >
-              Get kcross india on Android &amp; iOS
+              Get kcross india store on Android &amp; iOS
             </h2>
           </div>
           <button
@@ -98,13 +98,13 @@ const MobileAppGuideModal: React.FC<MobileAppGuideModalProps> = ({
         {tab === 'android' ? (
           <div className="mt-5 space-y-3 text-sm text-[#4A3F45]">
             <p className="text-xs leading-relaxed text-[#5C4F55]">
-              Install kcross india directly onto your Android device via Google Play WebAPK
+              Install kcross india store directly onto your Android device via Google Play WebAPK
               instant install for offline catalog access and express checkout.
             </p>
             <ol className="space-y-2 rounded-xl border border-[#EAE4E0] bg-[#FAF8F6] p-4 text-xs text-[#1E161A]">
               <li>1. Tap <strong>Install Android App</strong> below or open the Chrome menu (⋮).</li>
               <li>2. Select <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
-              <li>3. Launch kcross india from your Android app drawer just like a Play Store app.</li>
+              <li>3. Launch kcross india store from your Android app drawer just like a Play Store app.</li>
             </ol>
             {isInstallable && (
               <button
@@ -123,7 +123,7 @@ const MobileAppGuideModal: React.FC<MobileAppGuideModalProps> = ({
         ) : (
           <div className="mt-5 space-y-3 text-sm text-[#4A3F45]">
             <p className="text-xs leading-relaxed text-[#5C4F55]">
-              Add kcross india to your iPhone or iPad Home Screen for full-screen iOS app mode,
+              Add kcross india store to your iPhone or iPad Home Screen for full-screen iOS app mode,
               Face ID/Google sync, and offline browsing.
             </p>
             <ol className="space-y-2 rounded-xl border border-[#EAE4E0] bg-[#FAF8F6] p-4 text-xs text-[#1E161A]">
@@ -230,7 +230,7 @@ export const AppStoreFooterBadges: React.FC = () => {
           <button
             type="button"
             onClick={handlePlayStoreClick}
-            aria-label="Get kcross india on Google Play for Android"
+            aria-label="Get kcross india store on Google Play for Android"
             className="inline-flex items-center gap-2 rounded-lg bg-[#1E161A] px-3 py-2 text-left text-white transition-colors hover:bg-[#352A30]"
           >
             <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -262,7 +262,7 @@ export const AppStoreFooterBadges: React.FC = () => {
           <button
             type="button"
             onClick={() => setModalPlatform('ios')}
-            aria-label="Download kcross india for iOS iPhone and iPad"
+            aria-label="Download kcross india store for iOS iPhone and iPad"
             className="inline-flex items-center gap-2 rounded-lg bg-[#1E161A] px-3 py-2 text-left text-white transition-colors hover:bg-[#352A30]"
           >
             <svg className="h-4 w-4 shrink-0 fill-current" viewBox="0 0 24 24" aria-hidden="true">

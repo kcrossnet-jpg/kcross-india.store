@@ -1,45 +1,80 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import dotenv from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
 import {defineConfig, loadEnv} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 
+const cleanConfigVal = (val: unknown): string => {
+  if (typeof val !== 'string') return '';
+  const trimmed = val.trim();
+  if (!trimmed || trimmed === '0' || trimmed === 'undefined' || trimmed === 'null') return '';
+  return trimmed;
+};
+
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const localEnvPath = path.resolve(import.meta.dirname, '.env.local');
   const localConfigPath = path.resolve(import.meta.dirname, 'firebase-applet-config.json');
-  let localFirebaseConfig: Record<string, string> = {};
 
-  if (!env.VITE_FIREBASE_API_KEY && fs.existsSync(localConfigPath)) {
+  let dotEnvLocal: Record<string, string> = {};
+  if (fs.existsSync(localEnvPath)) {
     try {
-      localFirebaseConfig = JSON.parse(fs.readFileSync(localConfigPath, 'utf-8'));
+      dotEnvLocal = dotenv.parse(fs.readFileSync(localEnvPath, 'utf-8'));
     } catch {
-      localFirebaseConfig = {};
+      dotEnvLocal = {};
     }
   }
 
-  const firebaseEnv = {
-    VITE_FIREBASE_API_KEY: env.VITE_FIREBASE_API_KEY || localFirebaseConfig.apiKey || '',
-    VITE_FIREBASE_AUTH_DOMAIN: env.VITE_FIREBASE_AUTH_DOMAIN || localFirebaseConfig.authDomain || '',
-    VITE_FIREBASE_PROJECT_ID: env.VITE_FIREBASE_PROJECT_ID || localFirebaseConfig.projectId || '',
-    VITE_FIREBASE_STORAGE_BUCKET:
-      env.VITE_FIREBASE_STORAGE_BUCKET || localFirebaseConfig.storageBucket || '',
-    VITE_FIREBASE_MESSAGING_SENDER_ID:
-      env.VITE_FIREBASE_MESSAGING_SENDER_ID || localFirebaseConfig.messagingSenderId || '',
-    VITE_FIREBASE_APP_ID: env.VITE_FIREBASE_APP_ID || localFirebaseConfig.appId || '',
-    VITE_FIREBASE_FIRESTORE_DATABASE_ID:
-      env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || localFirebaseConfig.firestoreDatabaseId || '',
-    VITE_FIREBASE_MEASUREMENT_ID:
-      env.VITE_FIREBASE_MEASUREMENT_ID || localFirebaseConfig.measurementId || '',
+  let appletJson: Record<string, unknown> = {};
+  if (fs.existsSync(localConfigPath)) {
+    try {
+      appletJson = JSON.parse(fs.readFileSync(localConfigPath, 'utf-8')) as Record<string, unknown>;
+    } catch {
+      appletJson = {};
+    }
+  }
+
+  const localFirebaseConfig = {
+    apiKey:
+      cleanConfigVal(env.VITE_FIREBASE_API_KEY) ||
+      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_API_KEY) ||
+      cleanConfigVal(appletJson.apiKey),
+    authDomain:
+      cleanConfigVal(env.VITE_FIREBASE_AUTH_DOMAIN) ||
+      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_AUTH_DOMAIN) ||
+      cleanConfigVal(appletJson.authDomain),
+    projectId:
+      cleanConfigVal(env.VITE_FIREBASE_PROJECT_ID) ||
+      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_PROJECT_ID) ||
+      cleanConfigVal(appletJson.projectId),
+    storageBucket:
+      cleanConfigVal(env.VITE_FIREBASE_STORAGE_BUCKET) ||
+      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_STORAGE_BUCKET) ||
+      cleanConfigVal(appletJson.storageBucket),
+    messagingSenderId:
+      cleanConfigVal(env.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
+      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
+      cleanConfigVal(appletJson.messagingSenderId),
+    appId:
+      cleanConfigVal(env.VITE_FIREBASE_APP_ID) ||
+      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_APP_ID) ||
+      cleanConfigVal(appletJson.appId),
+    firestoreDatabaseId:
+      cleanConfigVal(env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
+      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
+      cleanConfigVal(appletJson.firestoreDatabaseId),
+    measurementId:
+      cleanConfigVal(env.VITE_FIREBASE_MEASUREMENT_ID) ||
+      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_MEASUREMENT_ID) ||
+      cleanConfigVal(appletJson.measurementId),
   };
 
   return {
-    define: Object.fromEntries(
-      Object.entries(firebaseEnv).map(([key, value]) => [
-        `import.meta.env.${key}`,
-        JSON.stringify(value),
-      ])
-    ),
+    define: {
+      __LOCAL_FIREBASE_CONFIG__: JSON.stringify(localFirebaseConfig),
+    },
     plugins: [
       react(),
       tailwindcss(),
@@ -48,7 +83,7 @@ export default defineConfig(({mode}) => {
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
         manifest: {
           id: '/',
-          name: 'kcross india — Beauty & Studio',
+          name: 'kcross india store — Beauty & Studio',
           short_name: 'kcross india',
           description:
             'Curated beauty, skincare, haircare, fragrance, appliances, and in-store studio services across India.',

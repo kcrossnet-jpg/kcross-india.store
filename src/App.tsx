@@ -232,8 +232,8 @@ export default function App() {
       {
         key,
         productId: 'gift-card',
-        brand: 'kcross india',
-        name: 'kcross india Digital Gift Card',
+        brand: 'kcross india store',
+        name: 'kcross india store Digital Gift Card',
         variantLabel: `For ${recipientEmail}`,
         price: amount,
         mrp: null,
@@ -418,7 +418,7 @@ export default function App() {
 
       {/* Top Bar Contract: 3 zones */}
       <header className="sticky top-0 z-30 border-b border-[#EAE4E0] bg-[#FAF8F6]/95 backdrop-blur">
-        <div className="mx-auto max-w-[1200px] px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3 sm:gap-5 lg:gap-8">
+        <div className="mx-auto max-w-[1200px] px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-5 lg:gap-8">
           {/* Zone 1: Brand beauty emblem + wordmark */}
           <a
             href="#home"
@@ -426,16 +426,16 @@ export default function App() {
               e.preventDefault();
               navigate('home');
             }}
-            className="inline-flex items-center gap-2.5 font-display text-xl sm:text-2xl font-semibold tracking-tight text-[#1E161A] whitespace-nowrap shrink-0"
+            className="inline-flex items-center gap-1.5 sm:gap-2.5 font-display text-[15px] sm:text-xl lg:text-2xl font-semibold tracking-tight text-[#1E161A] whitespace-nowrap shrink-0"
           >
             <img
               src="/icon.svg"
               alt=""
               width={28}
               height={28}
-              className="h-7 w-7 rounded-lg shrink-0 shadow-xs"
+              className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg shrink-0 shadow-xs"
             />
-            <span>kcross india</span>
+            <span>kcross india store</span>
           </a>
 
           {/* Zone 2: 5 concise single-line nav links */}
@@ -463,12 +463,12 @@ export default function App() {
           </nav>
 
           {/* Zone 3: Customer Account + Bag action + Mobile menu button */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={() => navigate('login')}
               aria-label={authUser ? 'Open customer account' : 'Open customer login'}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 sm:px-3.5 py-2 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-lg border px-2 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
                 view === 'login'
                   ? 'border-[#C41E68] bg-[#C41E68]/10 text-[#C41E68]'
                   : 'border-[#EAE4E0] bg-white text-[#1E161A] hover:border-[#1E161A]'
@@ -482,9 +482,9 @@ export default function App() {
               type="button"
               onClick={() => setIsBagOpen(true)}
               aria-label={`Open shopping bag (${totals.itemCount} items)`}
-              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-lg bg-[#1E161A] px-3 sm:px-4 py-2 text-xs font-semibold text-white whitespace-nowrap shrink-0 transition-colors hover:bg-[#352A30]"
+              className="inline-flex items-center gap-1 sm:gap-2 rounded-lg bg-[#1E161A] px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-white whitespace-nowrap shrink-0 transition-colors hover:bg-[#352A30]"
             >
-              <ShoppingBag className="h-3.5 w-3.5" aria-hidden="true" />
+              <ShoppingBag className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span className="tabular-nums">Bag ({totals.itemCount})</span>
             </button>
 
@@ -493,7 +493,7 @@ export default function App() {
               onClick={() => setIsMobileMenuOpen((v) => !v)}
               aria-label="Toggle navigation menu"
               aria-expanded={isMobileMenuOpen}
-              className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg border border-[#EAE4E0] bg-white text-[#1E161A]"
+              className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg border border-[#EAE4E0] bg-white text-[#1E161A] shrink-0"
             >
               {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
@@ -717,7 +717,7 @@ export default function App() {
                 className="h-7 w-7 rounded-lg shrink-0"
               />
               <span className="font-display text-2xl font-semibold text-[#1E161A] block">
-                kcross india
+                kcross india store
               </span>
             </div>
             <p className="text-xs text-[#6E5F66] max-w-[32ch] leading-relaxed">
@@ -817,7 +817,7 @@ export default function App() {
         </div>
 
         <div className="border-t border-[#EAE4E0] px-4 sm:px-6 py-4 mx-auto max-w-[1200px] flex flex-wrap items-center justify-between gap-2 text-xs text-[#6E5F66]">
-          <span>© 2026 kcross india · kcrossindia.store. All rights reserved.</span>
+          <span>© 2026 kcross india store · kcrossindia.store. All rights reserved.</span>
           <span>100% Authentic · Direct Brand Sourcing · Pan-India Delivery</span>
         </div>
       </footer>

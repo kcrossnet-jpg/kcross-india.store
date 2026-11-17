@@ -802,7 +802,7 @@ export const PRODUCTS: Product[] = [
     surfaceTone: '#F7EBF0',
     accentTone: '#B83A6B',
     description:
-      'Everyday kcrossindia signature gel cleanser crafted without synthetic fragrance to remove sunscreen and leave skin supple.',
+      'Everyday kcross india store signature gel cleanser crafted without synthetic fragrance to remove sunscreen and leave skin supple.',
     keyIngredients: ['Centella Asiatica', 'Glycerin', 'Oat Amino Acids'],
     howToUse: 'Massage 1 pump onto wet skin for 30 seconds and rinse with cool water.',
     variants: [{ label: '150 ml', price: 649, mrp: 799 }],
@@ -836,7 +836,7 @@ export const STORES: StoreLocation[] = [
   {
     id: 'store-bandra',
     city: 'Mumbai',
-    name: 'kcross india Flagship — Bandra West',
+    name: 'kcross india store Flagship — Bandra West',
     address: 'Linking Road, Ground Floor, Bandra West, Mumbai 400050',
     hours: 'Daily · 10:30 AM – 9:30 PM',
     servicesAvailable: ['skin-analysis', 'shade-match', 'hair-consult', 'scent-layering'],
@@ -844,7 +844,7 @@ export const STORES: StoreLocation[] = [
   {
     id: 'store-parel',
     city: 'Mumbai',
-    name: 'kcross india Studio — Lower Parel',
+    name: 'kcross india store Studio — Lower Parel',
     address: 'High Street Phoenix Courtyard, Lower Parel, Mumbai 400013',
     hours: 'Daily · 11:00 AM – 10:00 PM',
     servicesAvailable: ['skin-analysis', 'shade-match', 'scent-layering'],
@@ -852,7 +852,7 @@ export const STORES: StoreLocation[] = [
   {
     id: 'store-delhi',
     city: 'New Delhi',
-    name: 'kcross india Atelier — Khan Market',
+    name: 'kcross india store Atelier — Khan Market',
     address: 'Middle Lane, Shop 42, Khan Market, New Delhi 110003',
     hours: 'Daily · 10:30 AM – 9:00 PM',
     servicesAvailable: ['skin-analysis', 'shade-match', 'hair-consult', 'scent-layering'],
@@ -860,7 +860,7 @@ export const STORES: StoreLocation[] = [
   {
     id: 'store-bengaluru',
     city: 'Bengaluru',
-    name: 'kcross india Store — Indiranagar',
+    name: 'kcross india store — Indiranagar',
     address: '100 Feet Road, HAL 2nd Stage, Indiranagar, Bengaluru 560038',
     hours: 'Daily · 10:30 AM – 9:30 PM',
     servicesAvailable: ['skin-analysis', 'hair-consult', 'shade-match'],
@@ -868,7 +868,7 @@ export const STORES: StoreLocation[] = [
   {
     id: 'store-hyderabad',
     city: 'Hyderabad',
-    name: 'kcross india Boutique — Jubilee Hills',
+    name: 'kcross india store Boutique — Jubilee Hills',
     address: 'Road No. 36, Jubilee Hills, Hyderabad 500033',
     hours: 'Daily · 11:00 AM – 9:30 PM',
     servicesAvailable: ['shade-match', 'scent-layering', 'hair-consult'],
@@ -941,7 +941,7 @@ export const SERVICES: BeautyService[] = [
 export const OFFERS: OfferItem[] = [
   {
     code: 'GLOW15',
-    title: '15% Off Your First kcross india Order',
+    title: '15% Off Your First kcross india store Order',
     description: 'Valid sitewide on skincare, makeup, haircare & bath essentials with no minimum cart.',
     minSpend: 0,
     discountType: 'percent',

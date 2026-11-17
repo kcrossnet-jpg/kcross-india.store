@@ -330,7 +330,7 @@ export const FaqView: React.FC = () => {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
   const faqs = [
     {
-      q: 'Are all products sold on kcross india 100% authentic?',
+      q: 'Are all products sold on kcross india store 100% authentic?',
       a: 'Yes. Every item is sourced directly from authorized brand houses and official Indian distributors—never grey-market resellers.',
     },
     {
@@ -338,8 +338,8 @@ export const FaqView: React.FC = () => {
       a: 'Orders of ₹999 or more qualify for free pan-India shipping. Below ₹999, a flat ₹99 delivery fee applies. You can pay via UPI, Card, or Cash on Delivery.',
     },
     {
-      q: 'Can I redeem kcross india Gift Cards at physical stores?',
-      a: 'Yes, digital and physical kcross india Gift Cards work seamlessly both online at checkout and across all flagship studios in Mumbai, Delhi, Bengaluru, and Hyderabad.',
+      q: 'Can I redeem kcross india store Gift Cards at physical stores?',
+      a: 'Yes, digital and physical kcross india store Gift Cards work seamlessly both online at checkout and across all flagship studios in Mumbai, Delhi, Bengaluru, and Hyderabad.',
     },
     {
       q: 'Are in-store beauty services really complimentary?',
@@ -423,7 +423,7 @@ export const EditorialPolicyView: React.FC<{
       eyebrow: 'Company',
       title: 'Our Story',
       paragraphs: [
-        'kcross india brings together over two decades of Indian beauty retail heritage with kcrossindia.store’s everyday minimalist routine philosophy.',
+        'kcross india store brings together over two decades of Indian beauty retail heritage with kcrossindia.store’s everyday minimalist routine philosophy.',
         'From French pharmacy micellar staples and patented hair bond science to luxury millésime perfumery and complimentary in-store shade trials, we make authentic beauty effortless.',
       ],
       bullets: [

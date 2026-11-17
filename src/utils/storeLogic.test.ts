@@ -73,8 +73,8 @@ test('calculateCartTotals waives shipping on digital gift cards', () => {
     {
       key: 'gift::2500',
       productId: 'gift-card',
-      brand: 'kcross india',
-      name: 'kcross india Digital Gift Card',
+      brand: 'kcross india store',
+      name: 'kcross india store Digital Gift Card',
       variantLabel: '₹2,500 E-Gift',
       price: 500,
       mrp: null,
