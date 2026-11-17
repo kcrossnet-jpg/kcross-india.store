@@ -38,34 +38,42 @@ export default defineConfig(({mode}) => {
 
   const localFirebaseConfig = {
     apiKey:
+      cleanConfigVal(process.env.VITE_FIREBASE_API_KEY) ||
       cleanConfigVal(env.VITE_FIREBASE_API_KEY) ||
       cleanConfigVal(dotEnvLocal.VITE_FIREBASE_API_KEY) ||
       cleanConfigVal(appletJson.apiKey),
     authDomain:
+      cleanConfigVal(process.env.VITE_FIREBASE_AUTH_DOMAIN) ||
       cleanConfigVal(env.VITE_FIREBASE_AUTH_DOMAIN) ||
       cleanConfigVal(dotEnvLocal.VITE_FIREBASE_AUTH_DOMAIN) ||
       cleanConfigVal(appletJson.authDomain),
     projectId:
+      cleanConfigVal(process.env.VITE_FIREBASE_PROJECT_ID) ||
       cleanConfigVal(env.VITE_FIREBASE_PROJECT_ID) ||
       cleanConfigVal(dotEnvLocal.VITE_FIREBASE_PROJECT_ID) ||
       cleanConfigVal(appletJson.projectId),
     storageBucket:
+      cleanConfigVal(process.env.VITE_FIREBASE_STORAGE_BUCKET) ||
       cleanConfigVal(env.VITE_FIREBASE_STORAGE_BUCKET) ||
       cleanConfigVal(dotEnvLocal.VITE_FIREBASE_STORAGE_BUCKET) ||
       cleanConfigVal(appletJson.storageBucket),
     messagingSenderId:
+      cleanConfigVal(process.env.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
       cleanConfigVal(env.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
       cleanConfigVal(dotEnvLocal.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
       cleanConfigVal(appletJson.messagingSenderId),
     appId:
+      cleanConfigVal(process.env.VITE_FIREBASE_APP_ID) ||
       cleanConfigVal(env.VITE_FIREBASE_APP_ID) ||
       cleanConfigVal(dotEnvLocal.VITE_FIREBASE_APP_ID) ||
       cleanConfigVal(appletJson.appId),
     firestoreDatabaseId:
+      cleanConfigVal(process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
       cleanConfigVal(env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
       cleanConfigVal(dotEnvLocal.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
       cleanConfigVal(appletJson.firestoreDatabaseId),
     measurementId:
+      cleanConfigVal(process.env.VITE_FIREBASE_MEASUREMENT_ID) ||
       cleanConfigVal(env.VITE_FIREBASE_MEASUREMENT_ID) ||
       cleanConfigVal(dotEnvLocal.VITE_FIREBASE_MEASUREMENT_ID) ||
       cleanConfigVal(appletJson.measurementId),

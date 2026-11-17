@@ -11,14 +11,20 @@ const cleanVal = (val?: string): string => {
 
 const localFallback = __LOCAL_FIREBASE_CONFIG__ || {};
 
+const resolvedProjectId =
+  cleanVal(import.meta.env.VITE_FIREBASE_PROJECT_ID) || cleanVal(localFallback.projectId);
+
 const firebaseConfig = {
   apiKey: cleanVal(import.meta.env.VITE_FIREBASE_API_KEY) || cleanVal(localFallback.apiKey),
   authDomain:
-    cleanVal(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN) || cleanVal(localFallback.authDomain),
-  projectId:
-    cleanVal(import.meta.env.VITE_FIREBASE_PROJECT_ID) || cleanVal(localFallback.projectId),
+    cleanVal(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN) ||
+    cleanVal(localFallback.authDomain) ||
+    (resolvedProjectId ? `${resolvedProjectId}.firebaseapp.com` : ''),
+  projectId: resolvedProjectId,
   storageBucket:
-    cleanVal(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET) || cleanVal(localFallback.storageBucket),
+    cleanVal(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET) ||
+    cleanVal(localFallback.storageBucket) ||
+    (resolvedProjectId ? `${resolvedProjectId}.firebasestorage.app` : ''),
   messagingSenderId:
     cleanVal(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
     cleanVal(localFallback.messagingSenderId),
@@ -30,6 +36,12 @@ const firebaseConfig = {
 const firestoreDatabaseId =
   cleanVal(import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
   cleanVal(localFallback.firestoreDatabaseId);
+
+export const missingFirebaseEnvVars: string[] = [
+  ...(!firebaseConfig.apiKey ? ['VITE_FIREBASE_API_KEY'] : []),
+  ...(!firebaseConfig.projectId ? ['VITE_FIREBASE_PROJECT_ID'] : []),
+  ...(!firebaseConfig.appId ? ['VITE_FIREBASE_APP_ID'] : []),
+];
 
 export const isFirebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
 import { Heart, Menu, Search, ShoppingBag, User as UserIcon, X } from 'lucide-react';
 import { CATEGORIES, PRODUCTS, SEEDED_ORDERS } from './data/catalog';
-import { auth, googleProvider } from './firebase';
+import { auth, googleProvider, missingFirebaseEnvVars } from './firebase';
 import {
   ActiveView,
   CartItem,
@@ -303,7 +303,11 @@ export default function App() {
   const handleGoogleSignIn = async () => {
     setAuthError(null);
     if (!auth || !googleProvider) {
-      setAuthError('Cloud sign-in requires Firebase environment variables (VITE_FIREBASE_*) to be configured.');
+      const missingText =
+        missingFirebaseEnvVars.length > 0 ? missingFirebaseEnvVars.join(', ') : 'VITE_FIREBASE_*';
+      setAuthError(
+        `Cloud sign-in requires Firebase build environment variables (${missingText}) to be configured in your hosting dashboard (such as Cloudflare Pages Settings -> Environment variables) and redeployed.`
+      );
       return;
     }
     setIsSigningIn(true);
@@ -316,6 +320,10 @@ export default function App() {
         setAuthError('Sign-in popup was closed before completing login.');
       } else if (code === 'auth/popup-blocked') {
         setAuthError('Popup blocked by browser. Please allow popups for this site and try again.');
+      } else if (code === 'auth/unauthorized-domain') {
+        setAuthError(
+          `Domain "${window.location.hostname}" is not in Firebase Console -> Authentication -> Settings -> Authorized domains.`
+        );
       } else {
         setAuthError('Unable to complete Google sign-in right now. Please try again.');
       }
