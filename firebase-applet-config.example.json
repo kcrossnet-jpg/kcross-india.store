@@ -1,11 +1,11 @@
 {
-  "projectId": "YOUR_PROJECT_ID",
-  "appId": "YOUR_FIREBASE_APP_ID",
-  "apiKey": "YOUR_FIREBASE_API_KEY",
-  "authDomain": "YOUR_PROJECT_ID.firebaseapp.com",
+  "projectId": "kcross-india-store",
+  "appId": "1:521377562957:web:5d6fabc3090d8697917704",
+  "apiKey": "AIzaSyD84YOr1Gnl7aB2fG1fLbtCqCxuX3jkgVo",
+  "authDomain": "kcross-india-store.firebaseapp.com",
   "firestoreDatabaseId": "YOUR_FIRESTORE_DATABASE_ID",
-  "storageBucket": "YOUR_PROJECT_ID.firebasestorage.app",
-  "messagingSenderId": "YOUR_MESSAGING_SENDER_ID",
+  "storageBucket": "kcross-india-store.firebasestorage.app",
+  "messagingSenderId": "521377562957",
   "measurementId": "",
   "oAuthClientId": "",
   "recaptchaSiteKey": ""
