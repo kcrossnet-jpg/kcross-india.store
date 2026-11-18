@@ -1,41 +1,35 @@
 import { FirebaseApp, initializeApp } from 'firebase/app';
 import { Auth, getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { doc, Firestore, getDocFromServer, getFirestore } from 'firebase/firestore';
-
-const cleanVal = (val?: string): string => {
-  if (!val) return '';
-  const trimmed = val.trim();
-  if (!trimmed || trimmed === '0' || trimmed === 'undefined' || trimmed === 'null') return '';
-  return trimmed;
-};
+import { resolveFirebaseConfig } from './utils/firebaseConfig';
 
 const localFallback = __LOCAL_FIREBASE_CONFIG__ || {};
 
-const resolvedProjectId =
-  cleanVal(import.meta.env.VITE_FIREBASE_PROJECT_ID) || cleanVal(localFallback.projectId);
+const resolved = resolveFirebaseConfig(
+  {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  },
+  localFallback
+);
 
 const firebaseConfig = {
-  apiKey: cleanVal(import.meta.env.VITE_FIREBASE_API_KEY) || cleanVal(localFallback.apiKey),
-  authDomain:
-    cleanVal(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN) ||
-    cleanVal(localFallback.authDomain) ||
-    (resolvedProjectId ? `${resolvedProjectId}.firebaseapp.com` : ''),
-  projectId: resolvedProjectId,
-  storageBucket:
-    cleanVal(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET) ||
-    cleanVal(localFallback.storageBucket) ||
-    (resolvedProjectId ? `${resolvedProjectId}.firebasestorage.app` : ''),
-  messagingSenderId:
-    cleanVal(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
-    cleanVal(localFallback.messagingSenderId),
-  appId: cleanVal(import.meta.env.VITE_FIREBASE_APP_ID) || cleanVal(localFallback.appId),
-  measurementId:
-    cleanVal(import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) || cleanVal(localFallback.measurementId),
+  apiKey: resolved.apiKey,
+  authDomain: resolved.authDomain,
+  projectId: resolved.projectId,
+  storageBucket: resolved.storageBucket,
+  messagingSenderId: resolved.messagingSenderId,
+  appId: resolved.appId,
+  ...(resolved.measurementId ? { measurementId: resolved.measurementId } : {}),
 };
 
-const firestoreDatabaseId =
-  cleanVal(import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
-  cleanVal(localFallback.firestoreDatabaseId);
+const firestoreDatabaseId = resolved.firestoreDatabaseId;
 
 export const missingFirebaseEnvVars: string[] = [
   ...(!firebaseConfig.apiKey ? ['VITE_FIREBASE_API_KEY'] : []),

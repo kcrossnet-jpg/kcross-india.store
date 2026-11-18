@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PRODUCTS, SEEDED_ORDERS } from '../data/catalog';
+import { resolveFirebaseConfig } from './firebaseConfig';
 import {
   calculateCartTotals,
   filterProducts,
@@ -191,4 +192,39 @@ test('validateCustomerProfileForm and formatOrderItemsSummary enforce blueprint 
   ]);
   assert.equal(summary.itemCount, 2);
   assert.ok(summary.itemsSummary.includes('OLAPLEX No. 4 Bond Maintenance Shampoo (250 ml) × 2'));
+});
+
+test('resolveFirebaseConfig rejects malformed or service-account env values and uses valid fallback', () => {
+  const corruptedProcessEnv = {
+    apiKey: '0',
+    authDomain: '0',
+    projectId: '0',
+    storageBucket: '0',
+    messagingSenderId: 'ca3f8afc957cf8e19eee2d5e2c9998c026054c35',
+    appId: '118196566563466857443',
+    firestoreDatabaseId: 'kcross-india-store',
+    measurementId: 'https://accounts.google.com/o/oauth2/auth',
+  };
+  const validLocal = {
+    apiKey: 'AIzaSyD84YOr1Gnl7aB2fG1fLbtCqCxuX3jkgVo',
+    authDomain: 'kcross-india-store.firebaseapp.com',
+    projectId: 'kcross-india-store',
+    storageBucket: 'kcross-india-store.firebasestorage.app',
+    messagingSenderId: '521377562957',
+    appId: '1:521377562957:web:5d6fabc3090d8697917704',
+    firestoreDatabaseId: 'ai-studio-kcrossindiastore-38a9aa78-ebf4-46d3-97b9-77d621ff37a0',
+    measurementId: '',
+  };
+
+  const resolved = resolveFirebaseConfig(corruptedProcessEnv, validLocal);
+  assert.equal(resolved.apiKey, validLocal.apiKey);
+  assert.equal(resolved.projectId, 'kcross-india-store');
+  assert.equal(resolved.appId, validLocal.appId);
+  assert.equal(resolved.messagingSenderId, '521377562957');
+  assert.equal(resolved.firestoreDatabaseId, validLocal.firestoreDatabaseId);
+  assert.equal(resolved.measurementId, '');
+
+  const validHostedOnly = resolveFirebaseConfig(validLocal, {});
+  assert.equal(validHostedOnly.apiKey, validLocal.apiKey);
+  assert.equal(validHostedOnly.firestoreDatabaseId, validLocal.firestoreDatabaseId);
 });

@@ -5,13 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {defineConfig, loadEnv} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
-
-const cleanConfigVal = (val: unknown): string => {
-  if (typeof val !== 'string') return '';
-  const trimmed = val.trim();
-  if (!trimmed || trimmed === '0' || trimmed === 'undefined' || trimmed === 'null') return '';
-  return trimmed;
-};
+import {resolveFirebaseConfig} from './src/utils/firebaseConfig.ts';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -36,48 +30,37 @@ export default defineConfig(({mode}) => {
     }
   }
 
-  const localFirebaseConfig = {
-    apiKey:
-      cleanConfigVal(process.env.VITE_FIREBASE_API_KEY) ||
-      cleanConfigVal(env.VITE_FIREBASE_API_KEY) ||
-      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_API_KEY) ||
-      cleanConfigVal(appletJson.apiKey),
-    authDomain:
-      cleanConfigVal(process.env.VITE_FIREBASE_AUTH_DOMAIN) ||
-      cleanConfigVal(env.VITE_FIREBASE_AUTH_DOMAIN) ||
-      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_AUTH_DOMAIN) ||
-      cleanConfigVal(appletJson.authDomain),
-    projectId:
-      cleanConfigVal(process.env.VITE_FIREBASE_PROJECT_ID) ||
-      cleanConfigVal(env.VITE_FIREBASE_PROJECT_ID) ||
-      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_PROJECT_ID) ||
-      cleanConfigVal(appletJson.projectId),
-    storageBucket:
-      cleanConfigVal(process.env.VITE_FIREBASE_STORAGE_BUCKET) ||
-      cleanConfigVal(env.VITE_FIREBASE_STORAGE_BUCKET) ||
-      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_STORAGE_BUCKET) ||
-      cleanConfigVal(appletJson.storageBucket),
-    messagingSenderId:
-      cleanConfigVal(process.env.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
-      cleanConfigVal(env.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
-      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_MESSAGING_SENDER_ID) ||
-      cleanConfigVal(appletJson.messagingSenderId),
-    appId:
-      cleanConfigVal(process.env.VITE_FIREBASE_APP_ID) ||
-      cleanConfigVal(env.VITE_FIREBASE_APP_ID) ||
-      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_APP_ID) ||
-      cleanConfigVal(appletJson.appId),
-    firestoreDatabaseId:
-      cleanConfigVal(process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
-      cleanConfigVal(env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
-      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_FIRESTORE_DATABASE_ID) ||
-      cleanConfigVal(appletJson.firestoreDatabaseId),
-    measurementId:
-      cleanConfigVal(process.env.VITE_FIREBASE_MEASUREMENT_ID) ||
-      cleanConfigVal(env.VITE_FIREBASE_MEASUREMENT_ID) ||
-      cleanConfigVal(dotEnvLocal.VITE_FIREBASE_MEASUREMENT_ID) ||
-      cleanConfigVal(appletJson.measurementId),
-  };
+  const verifiedLocalFallback = resolveFirebaseConfig(
+    {
+      apiKey: dotEnvLocal.VITE_FIREBASE_API_KEY,
+      authDomain: dotEnvLocal.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: dotEnvLocal.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: dotEnvLocal.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: dotEnvLocal.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: dotEnvLocal.VITE_FIREBASE_APP_ID,
+      firestoreDatabaseId: dotEnvLocal.VITE_FIREBASE_FIRESTORE_DATABASE_ID,
+      measurementId: dotEnvLocal.VITE_FIREBASE_MEASUREMENT_ID,
+    },
+    appletJson
+  );
+
+  const runtimeEnvConfig = resolveFirebaseConfig(
+    {
+      apiKey: process.env.VITE_FIREBASE_API_KEY || env.VITE_FIREBASE_API_KEY,
+      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID || env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId:
+        process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.VITE_FIREBASE_APP_ID || env.VITE_FIREBASE_APP_ID,
+      firestoreDatabaseId:
+        process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || env.VITE_FIREBASE_FIRESTORE_DATABASE_ID,
+      measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || env.VITE_FIREBASE_MEASUREMENT_ID,
+    },
+    verifiedLocalFallback
+  );
+
+  const localFirebaseConfig = runtimeEnvConfig;
 
   return {
     define: {
