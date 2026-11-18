@@ -80,8 +80,8 @@ test('calculateCartTotals waives shipping on digital gift cards', () => {
       mrp: null,
       quantity: 1,
       visualForm: 'giftcard',
-      surfaceTone: '#F6ECEF',
-      accentTone: '#C41E68',
+      surfaceTone: '#FFF3EB',
+      accentTone: '#C2410C',
       isGiftCard: true,
     },
   ];

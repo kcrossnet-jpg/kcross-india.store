@@ -140,30 +140,30 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-[#1E161A]/45 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex justify-end bg-[#1C1613]/45 backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
       aria-label="Shopping Bag"
       onClick={onClose}
     >
       <div
-        className="relative flex h-full w-full sm:max-w-md flex-col bg-[#FAF8F6] shadow-2xl border-l border-[#EAE4E0]"
+        className="relative flex h-full w-full sm:max-w-md flex-col bg-[#FCF9F5] shadow-2xl border-l border-[#EAE1D8]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drawer Header */}
-        <div className="flex items-center justify-between border-b border-[#EAE4E0] bg-white px-4 sm:px-5 py-3.5 sm:py-4">
+        <div className="flex items-center justify-between border-b border-[#EAE1D8] bg-white px-4 sm:px-5 py-3.5 sm:py-4">
           <div className="flex items-center gap-2">
             {step === 'checkout' && (
               <button
                 type="button"
                 onClick={() => setStep('bag')}
                 aria-label="Back to bag"
-                className="mr-1 rounded-lg p-1.5 text-[#1E161A] hover:bg-[#F3EFEC]"
+                className="mr-1 rounded-lg p-1.5 text-[#1C1613] hover:bg-[#F3ECE4]"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
-            <h2 className="font-display text-xl font-medium text-[#1E161A]">
+            <h2 className="font-display text-xl font-medium text-[#1C1613]">
               {step === 'bag'
                 ? `Shopping Bag (${totals.itemCount})`
                 : step === 'checkout'
@@ -175,7 +175,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close shopping bag"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#EAE4E0] text-[#1E161A] hover:bg-[#F3EFEC]"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#EAE1D8] text-[#1C1613] hover:bg-[#F3ECE4]"
           >
             <X className="h-4 w-4" />
           </button>
@@ -196,22 +196,22 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                 </p>
               </div>
 
-              <div className="rounded-xl border border-[#EAE4E0] bg-white p-4 space-y-3 text-xs">
+              <div className="rounded-xl border border-[#EAE1D8] bg-white p-4 space-y-3 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-[#6E5F66]">Recipient</span>
-                  <span className="font-semibold text-[#1E161A]">{latestOrder.customerName}</span>
+                  <span className="text-[#6E6058]">Recipient</span>
+                  <span className="font-semibold text-[#1C1613]">{latestOrder.customerName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#6E5F66]">Delivery Address</span>
-                  <span className="font-medium text-[#1E161A] text-right max-w-[60%]">
+                  <span className="text-[#6E6058]">Delivery Address</span>
+                  <span className="font-medium text-[#1C1613] text-right max-w-[60%]">
                     {latestOrder.address}, {latestOrder.city} — {latestOrder.pinCode}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#6E5F66]">Payment</span>
-                  <span className="font-semibold text-[#1E161A]">{latestOrder.paymentMethod}</span>
+                  <span className="text-[#6E6058]">Payment</span>
+                  <span className="font-semibold text-[#1C1613]">{latestOrder.paymentMethod}</span>
                 </div>
-                <div className="flex justify-between border-t border-[#F3EFEC] pt-2.5 text-sm font-bold text-[#1E161A] tabular-nums">
+                <div className="flex justify-between border-t border-[#F3ECE4] pt-2.5 text-sm font-bold text-[#1C1613] tabular-nums">
                   <span>Total Paid</span>
                   <span>{formatINR(latestOrder.total)}</span>
                 </div>
@@ -224,18 +224,18 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                   setStep('bag');
                   onClose();
                 }}
-                className="w-full rounded-lg bg-[#C41E68] px-4 py-3 text-sm font-semibold text-white hover:bg-[#A61757]"
+                className="w-full rounded-lg bg-[#C2410C] px-4 py-3 text-sm font-semibold text-white hover:bg-[#9A3412]"
               >
                 Track Order {latestOrder.orderNumber}
               </button>
             </div>
           ) : items.length === 0 ? (
             <div className="py-16 text-center space-y-3">
-              <ShoppingBag className="h-10 w-10 text-[#9C8D94] mx-auto" aria-hidden="true" />
-              <h3 className="font-display text-xl font-medium text-[#1E161A]">
+              <ShoppingBag className="h-10 w-10 text-[#8A7B72] mx-auto" aria-hidden="true" />
+              <h3 className="font-display text-xl font-medium text-[#1C1613]">
                 Your bag is empty
               </h3>
-              <p className="text-xs text-[#6E5F66] max-w-[30ch] mx-auto">
+              <p className="text-xs text-[#6E6058] max-w-[30ch] mx-auto">
                 Add skincare, fragrances, haircare, or a gift card to unlock free shipping over
                 ₹999.
               </p>
@@ -243,15 +243,15 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
           ) : step === 'bag' ? (
             <>
               {/* Free shipping meter */}
-              <div className="rounded-xl border border-[#EAE4E0] bg-white p-3.5">
-                <p className="text-xs text-[#1E161A]">
+              <div className="rounded-xl border border-[#EAE1D8] bg-white p-3.5">
+                <p className="text-xs text-[#1C1613]">
                   {totals.amountForFreeShipping === 0
                     ? 'You unlocked free pan-India shipping.'
                     : `Add ${formatINR(totals.amountForFreeShipping)} more for free shipping (orders over ₹999).`}
                 </p>
-                <div className="mt-2 h-1.5 w-full rounded-full bg-[#EFEBE8] overflow-hidden">
+                <div className="mt-2 h-1.5 w-full rounded-full bg-[#F5EFE8] overflow-hidden">
                   <div
-                    className="h-full bg-[#C41E68] transition-all duration-300"
+                    className="h-full bg-[#C2410C] transition-all duration-300"
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -262,7 +262,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                 {items.map((item) => (
                   <div
                     key={item.key}
-                    className="flex gap-3.5 rounded-xl border border-[#EAE4E0] bg-white p-3"
+                    className="flex gap-3.5 rounded-xl border border-[#EAE1D8] bg-white p-3"
                   >
                     <ProductArt
                       form={item.visualForm}
@@ -274,31 +274,31 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                     <div className="flex-1 min-w-0 flex flex-col justify-between">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#6E5F66]">
+                          <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#6E6058]">
                             {item.brand}
                           </span>
-                          <p className="text-sm font-semibold text-[#1E161A] truncate">
+                          <p className="text-sm font-semibold text-[#1C1613] truncate">
                             {item.name}
                           </p>
-                          <p className="text-xs text-[#6E5F66] truncate">{item.variantLabel}</p>
+                          <p className="text-xs text-[#6E6058] truncate">{item.variantLabel}</p>
                         </div>
                         <button
                           type="button"
                           onClick={() => onRemoveItem(item.key)}
                           aria-label={`Remove ${item.name} from bag`}
-                          className="p-1 text-[#6E5F66] hover:text-[#B91C1C]"
+                          className="p-1 text-[#6E6058] hover:text-[#B91C1C]"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
 
                       <div className="mt-2 flex items-center justify-between gap-2">
-                        <div className="inline-flex items-center rounded-md border border-[#EAE4E0] bg-[#FAF8F6]">
+                        <div className="inline-flex items-center rounded-md border border-[#EAE1D8] bg-[#FCF9F5]">
                           <button
                             type="button"
                             onClick={() => onUpdateQuantity(item.key, -1)}
                             aria-label={`Decrease quantity of ${item.name}`}
-                            className="px-2 py-1 text-xs font-semibold text-[#1E161A] hover:bg-[#EFEBE8]"
+                            className="px-2 py-1 text-xs font-semibold text-[#1C1613] hover:bg-[#F5EFE8]"
                           >
                             −
                           </button>
@@ -309,12 +309,12 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                             type="button"
                             onClick={() => onUpdateQuantity(item.key, 1)}
                             aria-label={`Increase quantity of ${item.name}`}
-                            className="px-2 py-1 text-xs font-semibold text-[#1E161A] hover:bg-[#EFEBE8]"
+                            className="px-2 py-1 text-xs font-semibold text-[#1C1613] hover:bg-[#F5EFE8]"
                           >
                             +
                           </button>
                         </div>
-                        <span className="text-sm font-bold text-[#1E161A] tabular-nums">
+                        <span className="text-sm font-bold text-[#1C1613] tabular-nums">
                           {formatINR(item.price * item.quantity)}
                         </span>
                       </div>
@@ -324,8 +324,8 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
               </div>
 
               {/* Coupon Box */}
-              <form onSubmit={handleCouponSubmit} className="rounded-xl border border-[#EAE4E0] bg-white p-3.5 space-y-2">
-                <label htmlFor="coupon-input" className="block text-xs font-semibold text-[#1E161A]">
+              <form onSubmit={handleCouponSubmit} className="rounded-xl border border-[#EAE1D8] bg-white p-3.5 space-y-2">
+                <label htmlFor="coupon-input" className="block text-xs font-semibold text-[#1C1613]">
                   Promo Code (try GLOW15 or BEAUTY500)
                 </label>
                 <div className="flex gap-2">
@@ -335,11 +335,11 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
                     placeholder="Enter coupon code"
-                    className="flex-1 min-w-0 rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3 py-2 text-xs font-mono-num uppercase text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+                    className="flex-1 min-w-0 rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2 text-xs font-mono-num uppercase text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
                   />
                   <button
                     type="submit"
-                    className="rounded-lg bg-[#1E161A] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#352A30] whitespace-nowrap"
+                    className="rounded-lg bg-[#1C1613] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#332924] whitespace-nowrap"
                   >
                     Apply
                   </button>
@@ -359,7 +359,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                         setCouponInput('');
                         onApplyCoupon(null);
                       }}
-                      className="underline text-[#6E5F66]"
+                      className="underline text-[#6E6058]"
                     >
                       Remove
                     </button>
@@ -371,7 +371,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
             /* Checkout Step */
             <form id="checkout-form" onSubmit={handleCheckoutSubmit} noValidate className="space-y-4">
               <div>
-                <label htmlFor="co-name" className="block text-xs font-semibold text-[#1E161A] mb-1">
+                <label htmlFor="co-name" className="block text-xs font-semibold text-[#1C1613] mb-1">
                   Full Name
                 </label>
                 <input
@@ -380,7 +380,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Full name"
-                  className="w-full rounded-lg border border-[#EAE4E0] bg-white px-3 py-2.5 text-sm focus:border-[#C41E68] focus:outline-none"
+                  className="w-full rounded-lg border border-[#EAE1D8] bg-white px-3 py-2.5 text-sm focus:border-[#C2410C] focus:outline-none"
                 />
                 {errors.customerName && (
                   <p className="mt-1 text-xs text-[#B91C1C]">{errors.customerName}</p>
@@ -388,7 +388,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
               </div>
 
               <div>
-                <label htmlFor="co-email" className="block text-xs font-semibold text-[#1E161A] mb-1">
+                <label htmlFor="co-email" className="block text-xs font-semibold text-[#1C1613] mb-1">
                   Email
                 </label>
                 <input
@@ -397,13 +397,13 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full rounded-lg border border-[#EAE4E0] bg-white px-3 py-2.5 text-sm focus:border-[#C41E68] focus:outline-none"
+                  className="w-full rounded-lg border border-[#EAE1D8] bg-white px-3 py-2.5 text-sm focus:border-[#C2410C] focus:outline-none"
                 />
                 {errors.email && <p className="mt-1 text-xs text-[#B91C1C]">{errors.email}</p>}
               </div>
 
               <div>
-                <label htmlFor="co-address" className="block text-xs font-semibold text-[#1E161A] mb-1">
+                <label htmlFor="co-address" className="block text-xs font-semibold text-[#1C1613] mb-1">
                   Street Address
                 </label>
                 <textarea
@@ -412,14 +412,14 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Flat / House No., Building, Street"
-                  className="w-full rounded-lg border border-[#EAE4E0] bg-white px-3 py-2 text-sm focus:border-[#C41E68] focus:outline-none"
+                  className="w-full rounded-lg border border-[#EAE1D8] bg-white px-3 py-2 text-sm focus:border-[#C2410C] focus:outline-none"
                 />
                 {errors.address && <p className="mt-1 text-xs text-[#B91C1C]">{errors.address}</p>}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="co-city" className="block text-xs font-semibold text-[#1E161A] mb-1">
+                  <label htmlFor="co-city" className="block text-xs font-semibold text-[#1C1613] mb-1">
                     City
                   </label>
                   <input
@@ -428,12 +428,12 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="Mumbai"
-                    className="w-full rounded-lg border border-[#EAE4E0] bg-white px-3 py-2.5 text-sm focus:border-[#C41E68] focus:outline-none"
+                    className="w-full rounded-lg border border-[#EAE1D8] bg-white px-3 py-2.5 text-sm focus:border-[#C2410C] focus:outline-none"
                   />
                   {errors.city && <p className="mt-1 text-xs text-[#B91C1C]">{errors.city}</p>}
                 </div>
                 <div>
-                  <label htmlFor="co-pin" className="block text-xs font-semibold text-[#1E161A] mb-1">
+                  <label htmlFor="co-pin" className="block text-xs font-semibold text-[#1C1613] mb-1">
                     PIN Code
                   </label>
                   <input
@@ -442,7 +442,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                     value={pinCode}
                     onChange={(e) => setPinCode(e.target.value)}
                     placeholder="400050"
-                    className="w-full rounded-lg border border-[#EAE4E0] bg-white px-3 py-2.5 text-sm font-mono-num focus:border-[#C41E68] focus:outline-none"
+                    className="w-full rounded-lg border border-[#EAE1D8] bg-white px-3 py-2.5 text-sm font-mono-num focus:border-[#C2410C] focus:outline-none"
                   />
                   {errors.pinCode && (
                     <p className="mt-1 text-xs text-[#B91C1C]">{errors.pinCode}</p>
@@ -451,7 +451,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
               </div>
 
               <div>
-                <span className="block text-xs font-semibold text-[#1E161A] mb-2">
+                <span className="block text-xs font-semibold text-[#1C1613] mb-2">
                   Payment Method
                 </span>
                 <div className="grid grid-cols-3 gap-2">
@@ -462,8 +462,8 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                       onClick={() => setPaymentMethod(method)}
                       className={`rounded-lg border px-2 py-2.5 text-xs font-semibold leading-tight transition-colors ${
                         paymentMethod === method
-                          ? 'border-[#C41E68] bg-[#C41E68]/10 text-[#C41E68]'
-                          : 'border-[#EAE4E0] bg-white text-[#1E161A]'
+                          ? 'border-[#C2410C] bg-[#C2410C]/10 text-[#C2410C]'
+                          : 'border-[#EAE1D8] bg-white text-[#1C1613]'
                       }`}
                     >
                       {method === 'COD' ? 'Cash on Delivery' : method}
@@ -477,9 +477,9 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
 
         {/* Drawer Footer */}
         {items.length > 0 && step !== 'confirmed' && (
-          <div className="border-t border-[#EAE4E0] bg-white p-4 sm:p-5 space-y-3">
+          <div className="border-t border-[#EAE1D8] bg-white p-4 sm:p-5 space-y-3">
             <div className="space-y-1.5 text-xs tabular-nums">
-              <div className="flex justify-between text-[#6E5F66]">
+              <div className="flex justify-between text-[#6E6058]">
                 <span>Subtotal</span>
                 <span>{formatINR(totals.subtotal)}</span>
               </div>
@@ -490,16 +490,16 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                 </div>
               )}
               {totals.couponDiscount > 0 && (
-                <div className="flex justify-between text-[#C41E68]">
+                <div className="flex justify-between text-[#C2410C]">
                   <span>Coupon ({totals.couponCode})</span>
                   <span>−{formatINR(totals.couponDiscount)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-[#6E5F66]">
+              <div className="flex justify-between text-[#6E6058]">
                 <span>Shipping</span>
                 <span>{totals.shippingFee === 0 ? 'Free' : formatINR(totals.shippingFee)}</span>
               </div>
-              <div className="flex justify-between border-t border-[#F3EFEC] pt-2 text-base font-bold text-[#1E161A]">
+              <div className="flex justify-between border-t border-[#F3ECE4] pt-2 text-base font-bold text-[#1C1613]">
                 <span>Total</span>
                 <span>{formatINR(totals.total)}</span>
               </div>
@@ -513,7 +513,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                   setErrors({});
                   setStep('checkout');
                 }}
-                className="w-full rounded-lg bg-[#C41E68] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#A61757]"
+                className="w-full rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412]"
               >
                 Proceed to Checkout
               </button>
@@ -522,7 +522,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                 key="place-order-submit"
                 type="submit"
                 form="checkout-form"
-                className="w-full rounded-lg bg-[#C41E68] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#A61757]"
+                className="w-full rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412]"
               >
                 Place Order · {formatINR(totals.total)}
               </button>

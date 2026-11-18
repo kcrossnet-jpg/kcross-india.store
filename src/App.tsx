@@ -33,7 +33,7 @@ import {
   WishlistView,
 } from './components/HelpAndInfoViews';
 import { HomeView } from './components/HomeView';
-import { GiftCardsView, OffersView } from './components/OffersAndGiftCardsView';
+import { GiftCardsView, GiftCardStyleSelection, OffersView } from './components/OffersAndGiftCardsView';
 import {
   AppStoreFooterBadges,
   OfflineIndicator,
@@ -225,7 +225,13 @@ export default function App() {
     notify(`Added ${product.name} to bag`);
   };
 
-  const handleAddGiftCard = (amount: number, recipientEmail: string, message: string) => {
+  const handleAddGiftCard = (
+    amount: number,
+    recipientEmail: string,
+    message: string,
+    cardStyle?: GiftCardStyleSelection
+  ) => {
+    const editionLabel = cardStyle?.editionLabel || 'Espresso Signature';
     const key = `gift-${amount}-${recipientEmail}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     setCart((prev) => [
       ...prev,
@@ -233,14 +239,14 @@ export default function App() {
         key,
         productId: 'gift-card',
         brand: 'kcross india store',
-        name: 'kcross india store Digital Gift Card',
+        name: `kcross india store ${editionLabel} Gift Card`,
         variantLabel: `For ${recipientEmail}`,
         price: amount,
         mrp: null,
         quantity: 1,
         visualForm: 'giftcard',
-        surfaceTone: '#F6ECEF',
-        accentTone: '#C41E68',
+        surfaceTone: cardStyle?.surfaceTone || '#FFF3EB',
+        accentTone: cardStyle?.accentTone || '#C2410C',
         isGiftCard: true,
         giftRecipientEmail: recipientEmail,
         giftMessage: message,
@@ -405,13 +411,13 @@ export default function App() {
   const totals = calculateCartTotals(cart, appliedCoupon);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF8F6] text-[#1E161A]">
+    <div className="min-h-screen flex flex-col bg-[#FCF9F5] text-[#1C1613]">
       {/* Slim Dismissible Announcement Bar (<= 34px) */}
       {showPromoBar && (
-        <div className="bg-[#1E161A] text-[#FAF8F6] text-xs px-4 py-1.5 flex items-center justify-center relative">
+        <div className="bg-[#1C1613] text-[#FCF9F5] text-xs px-4 py-1.5 flex items-center justify-center relative">
           <p className="truncate pr-6">
             Free shipping over ₹999 · 100% Authentic &amp; Direct from Brands · Use code{' '}
-            <span className="font-mono-num text-[#F6BFD6]">GLOW15</span>
+            <span className="font-mono-num text-[#FDBA74]">GLOW15</span>
           </p>
           <button
             type="button"
@@ -425,29 +431,29 @@ export default function App() {
       )}
 
       {/* Top Bar Contract: 3 zones */}
-      <header className="sticky top-0 z-30 border-b border-[#EAE4E0] bg-[#FAF8F6]/95 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-[#EAE1D8] bg-[#FCF9F5]/95 backdrop-blur">
         <div className="mx-auto max-w-[1200px] px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-5 lg:gap-8">
-          {/* Zone 1: Brand beauty emblem + wordmark */}
+          {/* Zone 1: Brand logo + wordmark */}
           <a
             href="#home"
             onClick={(e) => {
               e.preventDefault();
               navigate('home');
             }}
-            className="inline-flex items-center gap-1.5 sm:gap-2.5 font-display text-[15px] sm:text-xl lg:text-2xl font-semibold tracking-tight text-[#1E161A] whitespace-nowrap shrink-0"
+            className="inline-flex items-center gap-1.5 sm:gap-2.5 font-display text-[15px] sm:text-xl lg:text-2xl font-semibold tracking-tight text-[#1C1613] whitespace-nowrap shrink-0"
           >
             <img
-              src="/icon.svg"
-              alt=""
-              width={28}
-              height={28}
-              className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg shrink-0 shadow-xs"
+              src="/assets/aistudio/imgi_5_images_e8c25121.jpg"
+              alt="Kcross india"
+              width={32}
+              height={32}
+              className="h-7 w-7 sm:h-8 sm:w-8 rounded-md object-contain bg-white border border-[#EAE1D8] shrink-0"
             />
             <span>kcross india store</span>
           </a>
 
           {/* Zone 2: 5 concise single-line nav links */}
-          <nav className="hidden md:flex items-center gap-4 lg:gap-7 text-sm font-medium text-[#5C4F55]">
+          <nav className="hidden md:flex items-center gap-4 lg:gap-7 text-sm font-medium text-[#574B44]">
             {(
               [
                 ['catalog', 'Catalog'],
@@ -461,8 +467,8 @@ export default function App() {
                 key={key}
                 type="button"
                 onClick={() => navigate(key)}
-                className={`whitespace-nowrap shrink-0 transition-colors hover:text-[#1E161A] ${
-                  view === key ? 'text-[#C41E68] font-semibold' : ''
+                className={`whitespace-nowrap shrink-0 transition-colors hover:text-[#1C1613] ${
+                  view === key ? 'text-[#C2410C] font-semibold' : ''
                 }`}
               >
                 {label}
@@ -478,8 +484,8 @@ export default function App() {
               aria-label={authUser ? 'Open customer account' : 'Open customer login'}
               className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-lg border px-2 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
                 view === 'login'
-                  ? 'border-[#C41E68] bg-[#C41E68]/10 text-[#C41E68]'
-                  : 'border-[#EAE4E0] bg-white text-[#1E161A] hover:border-[#1E161A]'
+                  ? 'border-[#C2410C] bg-[#C2410C]/10 text-[#C2410C]'
+                  : 'border-[#EAE1D8] bg-white text-[#1C1613] hover:border-[#1C1613]'
               }`}
             >
               <UserIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -490,7 +496,7 @@ export default function App() {
               type="button"
               onClick={() => setIsBagOpen(true)}
               aria-label={`Open shopping bag (${totals.itemCount} items)`}
-              className="inline-flex items-center gap-1 sm:gap-2 rounded-lg bg-[#1E161A] px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-white whitespace-nowrap shrink-0 transition-colors hover:bg-[#352A30]"
+              className="inline-flex items-center gap-1 sm:gap-2 rounded-lg bg-[#1C1613] px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-white whitespace-nowrap shrink-0 transition-colors hover:bg-[#332924]"
             >
               <ShoppingBag className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span className="tabular-nums">Bag ({totals.itemCount})</span>
@@ -501,7 +507,7 @@ export default function App() {
               onClick={() => setIsMobileMenuOpen((v) => !v)}
               aria-label="Toggle navigation menu"
               aria-expanded={isMobileMenuOpen}
-              className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg border border-[#EAE4E0] bg-white text-[#1E161A] shrink-0"
+              className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg border border-[#EAE1D8] bg-white text-[#1C1613] shrink-0"
             >
               {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
@@ -510,7 +516,7 @@ export default function App() {
 
         {/* Mobile Drawer Nav */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-[#EAE4E0] bg-white px-4 py-2 shadow-lg">
+          <div className="md:hidden border-t border-[#EAE1D8] bg-white px-4 py-2 shadow-lg">
             {(
               [
                 ['home', 'Home'],
@@ -528,10 +534,10 @@ export default function App() {
                 key={key}
                 type="button"
                 onClick={() => navigate(key)}
-                className={`block w-full text-left py-2.5 text-sm border-b border-[#F3EFEC] last:border-b-0 transition-colors ${
+                className={`block w-full text-left py-2.5 text-sm border-b border-[#F3ECE4] last:border-b-0 transition-colors ${
                   view === key
-                    ? 'font-semibold text-[#C41E68]'
-                    : 'font-medium text-[#1E161A]'
+                    ? 'font-semibold text-[#C2410C]'
+                    : 'font-medium text-[#1C1613]'
                 }`}
               >
                 {label}
@@ -545,17 +551,17 @@ export default function App() {
       </header>
 
       {/* Non-sticky First Navigation Layer: Departments + Search + Wishlist */}
-      <div className="border-b border-[#EAE4E0] bg-white">
+      <div className="border-b border-[#EAE1D8] bg-white">
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 py-2.5 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 sm:gap-3">
-          <div className="flex flex-wrap items-center gap-x-3.5 sm:gap-x-4 gap-y-1 text-xs font-medium text-[#5C4F55]">
+          <div className="flex flex-wrap items-center gap-x-3.5 sm:gap-x-4 gap-y-1 text-xs font-medium text-[#574B44]">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => navigateCategory(cat.id, false)}
-                className={`whitespace-nowrap shrink-0 py-1 transition-colors hover:text-[#C41E68] ${
+                className={`whitespace-nowrap shrink-0 py-1 transition-colors hover:text-[#C2410C] ${
                   view === 'catalog' && category === cat.id
-                    ? 'text-[#C41E68] font-semibold'
+                    ? 'text-[#C2410C] font-semibold'
                     : ''
                 }`}
               >
@@ -567,7 +573,7 @@ export default function App() {
           <div className="flex items-center gap-3 w-full lg:w-auto">
             <form onSubmit={handleHeaderSearchSubmit} className="relative flex-1 lg:w-56">
               <Search
-                className="h-3.5 w-3.5 text-[#6E5F66] absolute left-3 top-1/2 -translate-y-1/2"
+                className="h-3.5 w-3.5 text-[#6E6058] absolute left-3 top-1/2 -translate-y-1/2"
                 aria-hidden="true"
               />
               <input
@@ -586,7 +592,7 @@ export default function App() {
                 }}
                 placeholder="Search brands & products"
                 aria-label="Search brands and products"
-                className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] pl-8 pr-3 py-1.5 text-xs text-[#1E161A] placeholder:text-[#8B7D84] focus:border-[#C41E68] focus:outline-none"
+                className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] pl-8 pr-3 py-1.5 text-xs text-[#1C1613] placeholder:text-[#8A7B72] focus:border-[#C2410C] focus:outline-none"
               />
             </form>
 
@@ -594,11 +600,11 @@ export default function App() {
               type="button"
               onClick={() => navigate('wishlist')}
               aria-label={`Open wishlist (${wishlistIds.length} saved)`}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#5C4F55] hover:text-[#C41E68] whitespace-nowrap shrink-0 py-1"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#574B44] hover:text-[#C2410C] whitespace-nowrap shrink-0 py-1"
             >
               <Heart
                 className={`h-3.5 w-3.5 ${
-                  wishlistIds.length > 0 ? 'fill-[#C41E68] text-[#C41E68]' : ''
+                  wishlistIds.length > 0 ? 'fill-[#C2410C] text-[#C2410C]' : ''
                 }`}
                 aria-hidden="true"
               />
@@ -713,33 +719,33 @@ export default function App() {
       </main>
 
       {/* Clean Editorial Footer */}
-      <footer className="border-t border-[#EAE4E0] bg-white text-sm text-[#5C4F55]">
+      <footer className="border-t border-[#EAE1D8] bg-white text-sm text-[#574B44]">
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 py-10 sm:py-12 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-8">
           <div className="sm:col-span-3 lg:col-span-1 space-y-2.5">
             <div className="inline-flex items-center gap-2.5">
               <img
-                src="/icon.svg"
-                alt=""
-                width={28}
-                height={28}
-                className="h-7 w-7 rounded-lg shrink-0"
+                src="/assets/aistudio/imgi_5_images_e8c25121.jpg"
+                alt="Kcross india"
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-lg object-contain bg-white border border-[#EAE1D8] shrink-0"
               />
-              <span className="font-display text-2xl font-semibold text-[#1E161A] block">
+              <span className="font-display text-2xl font-semibold text-[#1C1613] block">
                 kcross india store
               </span>
             </div>
-            <p className="text-xs text-[#6E5F66] max-w-[32ch] leading-relaxed">
+            <p className="text-xs text-[#6E6058] max-w-[32ch] leading-relaxed">
               Curated beauty, salon haircare, luxury fragrances &amp; in-store studio services
               across India.
             </p>
-            <p className="text-xs text-[#1E161A] font-medium pt-1">
+            <p className="text-xs text-[#1C1613] font-medium pt-1">
               help@kcrossindia.store
             </p>
             <AppStoreFooterBadges />
           </div>
 
           <div>
-            <h3 className="font-sans text-xs font-semibold uppercase tracking-wider text-[#1E161A] mb-3">
+            <h3 className="font-sans text-xs font-semibold uppercase tracking-wider text-[#1C1613] mb-3">
               Departments
             </h3>
             <ul className="space-y-2 text-xs">
@@ -748,7 +754,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => navigateCategory(c.id, false)}
-                    className="hover:text-[#C41E68]"
+                    className="hover:text-[#C2410C]"
                   >
                     {c.label}
                   </button>
@@ -758,32 +764,32 @@ export default function App() {
           </div>
 
           <div>
-            <h3 className="font-sans text-xs font-semibold uppercase tracking-wider text-[#1E161A] mb-3">
+            <h3 className="font-sans text-xs font-semibold uppercase tracking-wider text-[#1C1613] mb-3">
               Help &amp; Policies
             </h3>
             <ul className="space-y-2 text-xs">
               <li>
-                <button type="button" onClick={() => navigate('track-order')} className="hover:text-[#C41E68]">
+                <button type="button" onClick={() => navigate('track-order')} className="hover:text-[#C2410C]">
                   Track Order
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigate('returns')} className="hover:text-[#C41E68]">
+                <button type="button" onClick={() => navigate('returns')} className="hover:text-[#C2410C]">
                   Returns &amp; Cancellations
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigate('shipping')} className="hover:text-[#C41E68]">
+                <button type="button" onClick={() => navigate('shipping')} className="hover:text-[#C2410C]">
                   Shipping Policy
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigate('faq')} className="hover:text-[#C41E68]">
+                <button type="button" onClick={() => navigate('faq')} className="hover:text-[#C2410C]">
                   FAQs
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigate('contact')} className="hover:text-[#C41E68]">
+                <button type="button" onClick={() => navigate('contact')} className="hover:text-[#C2410C]">
                   Contact Us / Help Centre
                 </button>
               </li>
@@ -791,32 +797,32 @@ export default function App() {
           </div>
 
           <div>
-            <h3 className="font-sans text-xs font-semibold uppercase tracking-wider text-[#1E161A] mb-3">
+            <h3 className="font-sans text-xs font-semibold uppercase tracking-wider text-[#1C1613] mb-3">
               Services &amp; Company
             </h3>
             <ul className="space-y-2 text-xs">
               <li>
-                <button type="button" onClick={() => navigate('login')} className="hover:text-[#C41E68]">
+                <button type="button" onClick={() => navigate('login')} className="hover:text-[#C2410C]">
                   {authUser ? 'My Account' : 'Customer Login'}
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigate('services')} className="hover:text-[#C41E68]">
+                <button type="button" onClick={() => navigate('services')} className="hover:text-[#C2410C]">
                   Find a Studio Store
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigate('gift-cards')} className="hover:text-[#C41E68]">
+                <button type="button" onClick={() => navigate('gift-cards')} className="hover:text-[#C2410C]">
                   Gift Cards
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigate('our-story')} className="hover:text-[#C41E68]">
+                <button type="button" onClick={() => navigate('our-story')} className="hover:text-[#C2410C]">
                   Our Story
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigate('ingredients')} className="hover:text-[#C41E68]">
+                <button type="button" onClick={() => navigate('ingredients')} className="hover:text-[#C2410C]">
                   Ingredient Standards
                 </button>
               </li>
@@ -824,7 +830,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="border-t border-[#EAE4E0] px-4 sm:px-6 py-4 mx-auto max-w-[1200px] flex flex-wrap items-center justify-between gap-2 text-xs text-[#6E5F66]">
+        <div className="border-t border-[#EAE1D8] px-4 sm:px-6 py-4 mx-auto max-w-[1200px] flex flex-wrap items-center justify-between gap-2 text-xs text-[#6E6058]">
           <span>© 2026 kcross india store · kcrossindia.store. All rights reserved.</span>
           <span>100% Authentic · Direct Brand Sourcing · Pan-India Delivery</span>
         </div>
@@ -862,7 +868,7 @@ export default function App() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-4 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-2rem)] text-center rounded-lg bg-[#1E161A] px-4 py-2.5 text-xs font-medium text-white shadow-lg"
+          className="fixed bottom-4 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-2rem)] text-center rounded-lg bg-[#1C1613] px-4 py-2.5 text-xs font-medium text-white shadow-lg"
         >
           {toast}
         </div>

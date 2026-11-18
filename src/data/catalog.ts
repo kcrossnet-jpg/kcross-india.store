@@ -14,7 +14,7 @@ export const CATEGORIES: CategoryInfo[] = [
     label: 'Makeup',
     tagline: 'Concealers, lip tints, foundations, brushes & palettes',
     subCategories: ['Face', 'Lips', 'Eyes', 'Tools & Brushes'],
-    accentTone: '#C41E68',
+    accentTone: '#C2410C',
   },
   {
     id: 'skin',

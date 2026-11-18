@@ -24,25 +24,25 @@ export const WishlistView: React.FC<WishlistViewProps> = ({
 
   return (
     <section className="py-10 space-y-8">
-      <div className="border-b border-[#EAE4E0] pb-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#C41E68]">Saved Edit</p>
-        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1E161A]">
+      <div className="border-b border-[#EAE1D8] pb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#C2410C]">Saved Edit</p>
+        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1C1613]">
           Your Wishlist ({savedProducts.length})
         </h1>
       </div>
 
       {savedProducts.length === 0 ? (
-        <div className="rounded-2xl border border-[#EAE4E0] bg-white p-8 sm:p-12 text-center space-y-3">
-          <h2 className="font-display text-2xl font-medium text-[#1E161A]">
+        <div className="rounded-2xl border border-[#EAE1D8] bg-white p-8 sm:p-12 text-center space-y-3">
+          <h2 className="font-display text-2xl font-medium text-[#1C1613]">
             No saved products yet
           </h2>
-          <p className="text-sm text-[#6E5F66]">
+          <p className="text-sm text-[#6E6058]">
             Tap the heart icon on any cleanser, fragrance, or hair tool to shortlist it here.
           </p>
           <button
             type="button"
             onClick={onBrowseCatalog}
-            className="mt-2 rounded-lg bg-[#C41E68] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#A61757]"
+            className="mt-2 rounded-lg bg-[#C2410C] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#9A3412]"
           >
             Explore Catalog
           </button>
@@ -100,16 +100,16 @@ export const TrackOrderView: React.FC<TrackOrderViewProps> = ({
 
   return (
     <section className="py-10 space-y-8 max-w-3xl">
-      <div className="border-b border-[#EAE4E0] pb-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#C41E68]">
+      <div className="border-b border-[#EAE1D8] pb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#C2410C]">
           Order Lookup
         </p>
-        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1E161A]">
+        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1C1613]">
           Track Your Order
         </h1>
-        <p className="mt-1.5 text-sm text-[#6E5F66]">
-          Enter your order ID (try <code className="font-mono-num text-[#1E161A]">LK-204518</code>{' '}
-          or <code className="font-mono-num text-[#1E161A]">BF-104200</code>, or any order you
+        <p className="mt-1.5 text-sm text-[#6E6058]">
+          Enter your order ID (try <code className="font-mono-num text-[#1C1613]">LK-204518</code>{' '}
+          or <code className="font-mono-num text-[#1C1613]">BF-104200</code>, or any order you
           placed).
         </p>
       </div>
@@ -124,11 +124,11 @@ export const TrackOrderView: React.FC<TrackOrderViewProps> = ({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="e.g. LK-204518 or BF-104200"
-          className="flex-1 min-w-[220px] rounded-lg border border-[#EAE4E0] bg-white px-4 py-3 text-sm font-mono-num uppercase text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+          className="flex-1 min-w-[220px] rounded-lg border border-[#EAE1D8] bg-white px-4 py-3 text-sm font-mono-num uppercase text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
         />
         <button
           type="submit"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#C41E68] px-5 py-3 text-sm font-semibold text-white hover:bg-[#A61757]"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white hover:bg-[#9A3412]"
         >
           <PackageSearch className="h-4 w-4" aria-hidden="true" />
           <span>Track Order</span>
@@ -143,15 +143,15 @@ export const TrackOrderView: React.FC<TrackOrderViewProps> = ({
       )}
 
       {found && (
-        <div className="rounded-2xl border border-[#EAE4E0] bg-white p-6 space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F3EFEC] pb-4">
+        <div className="rounded-2xl border border-[#EAE1D8] bg-white p-6 space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F3ECE4] pb-4">
             <div>
-              <span className="font-mono-num text-lg font-bold text-[#1E161A]">
+              <span className="font-mono-num text-lg font-bold text-[#1C1613]">
                 {found.orderNumber}
               </span>
-              <p className="text-xs text-[#6E5F66] mt-0.5">{found.estimatedDelivery}</p>
+              <p className="text-xs text-[#6E6058] mt-0.5">{found.estimatedDelivery}</p>
             </div>
-            <span className="text-xs font-semibold text-[#C41E68]">
+            <span className="text-xs font-semibold text-[#C2410C]">
               Status: {found.status} · {found.paymentMethod}
             </span>
           </div>
@@ -165,12 +165,12 @@ export const TrackOrderView: React.FC<TrackOrderViewProps> = ({
                 <div key={st} className="space-y-1.5">
                   <div
                     className={`h-1.5 rounded-full ${
-                      done ? 'bg-[#C41E68]' : 'bg-[#EFEBE8]'
+                      done ? 'bg-[#C2410C]' : 'bg-[#F5EFE8]'
                     }`}
                   />
                   <span
                     className={`block text-[10px] sm:text-[11px] font-semibold ${
-                      done ? 'text-[#1E161A]' : 'text-[#8B7D84]'
+                      done ? 'text-[#1C1613]' : 'text-[#8A7B72]'
                     }`}
                   >
                     {st}
@@ -181,18 +181,18 @@ export const TrackOrderView: React.FC<TrackOrderViewProps> = ({
           </div>
 
           {/* Items */}
-          <div className="space-y-2 border-t border-[#F3EFEC] pt-4 text-sm">
+          <div className="space-y-2 border-t border-[#F3ECE4] pt-4 text-sm">
             {found.items.map((item) => (
               <div key={item.key} className="flex justify-between gap-3 tabular-nums">
-                <span className="text-[#1E161A] min-w-0">
+                <span className="text-[#1C1613] min-w-0">
                   {item.brand} {item.name} ({item.variantLabel}) × {item.quantity}
                 </span>
-                <span className="font-semibold text-[#1E161A] shrink-0">
+                <span className="font-semibold text-[#1C1613] shrink-0">
                   {formatINR(item.price * item.quantity)}
                 </span>
               </div>
             ))}
-            <div className="flex justify-between border-t border-[#F3EFEC] pt-3 font-bold text-[#1E161A] tabular-nums">
+            <div className="flex justify-between border-t border-[#F3ECE4] pt-3 font-bold text-[#1C1613] tabular-nums">
               <span>Order Total</span>
               <span>{formatINR(found.total)}</span>
             </div>
@@ -225,14 +225,14 @@ export const ContactView: React.FC = () => {
 
   return (
     <section className="py-10 space-y-8 max-w-2xl">
-      <div className="border-b border-[#EAE4E0] pb-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#C41E68]">
+      <div className="border-b border-[#EAE1D8] pb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#C2410C]">
           Customer Care
         </p>
-        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1E161A]">
+        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1C1613]">
           Contact Us &amp; Help Centre
         </h1>
-        <p className="mt-1.5 text-sm text-[#6E5F66]">
+        <p className="mt-1.5 text-sm text-[#6E6058]">
           Reach our beauty advisors at <strong>help@kcrossindia.store</strong> (Mon–Sun, 10 AM – 8
           PM).
         </p>
@@ -251,10 +251,10 @@ export const ContactView: React.FC = () => {
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="rounded-2xl border border-[#EAE4E0] bg-white p-6 space-y-4"
+        className="rounded-2xl border border-[#EAE1D8] bg-white p-6 space-y-4"
       >
         <div>
-          <label htmlFor="contact-name" className="block text-xs font-semibold text-[#1E161A] mb-1">
+          <label htmlFor="contact-name" className="block text-xs font-semibold text-[#1C1613] mb-1">
             Name
           </label>
           <input
@@ -262,14 +262,14 @@ export const ContactView: React.FC = () => {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3.5 py-2.5 text-sm focus:border-[#C41E68] focus:outline-none"
+            className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3.5 py-2.5 text-sm focus:border-[#C2410C] focus:outline-none"
           />
           {errors.name && <p className="mt-1 text-xs text-[#B91C1C]">{errors.name}</p>}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="contact-email" className="block text-xs font-semibold text-[#1E161A] mb-1">
+            <label htmlFor="contact-email" className="block text-xs font-semibold text-[#1C1613] mb-1">
               Email
             </label>
             <input
@@ -277,20 +277,20 @@ export const ContactView: React.FC = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3.5 py-2.5 text-sm focus:border-[#C41E68] focus:outline-none"
+              className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3.5 py-2.5 text-sm focus:border-[#C2410C] focus:outline-none"
             />
             {errors.email && <p className="mt-1 text-xs text-[#B91C1C]">{errors.email}</p>}
           </div>
 
           <div>
-            <label htmlFor="contact-topic" className="block text-xs font-semibold text-[#1E161A] mb-1">
+            <label htmlFor="contact-topic" className="block text-xs font-semibold text-[#1C1613] mb-1">
               Topic
             </label>
             <select
               id="contact-topic"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3.5 py-2.5 text-sm focus:border-[#C41E68] focus:outline-none"
+              className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3.5 py-2.5 text-sm focus:border-[#C2410C] focus:outline-none"
             >
               <option>Order &amp; Shipping</option>
               <option>Returns &amp; Refunds</option>
@@ -301,7 +301,7 @@ export const ContactView: React.FC = () => {
         </div>
 
         <div>
-          <label htmlFor="contact-message" className="block text-xs font-semibold text-[#1E161A] mb-1">
+          <label htmlFor="contact-message" className="block text-xs font-semibold text-[#1C1613] mb-1">
             Message
           </label>
           <textarea
@@ -310,14 +310,14 @@ export const ContactView: React.FC = () => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Include your order ID or product question..."
-            className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3.5 py-2.5 text-sm focus:border-[#C41E68] focus:outline-none"
+            className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3.5 py-2.5 text-sm focus:border-[#C2410C] focus:outline-none"
           />
           {errors.message && <p className="mt-1 text-xs text-[#B91C1C]">{errors.message}</p>}
         </div>
 
         <button
           type="submit"
-          className="rounded-lg bg-[#C41E68] px-6 py-3 text-sm font-semibold text-white hover:bg-[#A61757]"
+          className="rounded-lg bg-[#C2410C] px-6 py-3 text-sm font-semibold text-white hover:bg-[#9A3412]"
         >
           Send Message
         </button>
@@ -349,9 +349,9 @@ export const FaqView: React.FC = () => {
 
   return (
     <section className="py-10 space-y-6 max-w-3xl">
-      <div className="border-b border-[#EAE4E0] pb-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#C41E68]">Help</p>
-        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1E161A]">
+      <div className="border-b border-[#EAE1D8] pb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#C2410C]">Help</p>
+        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1C1613]">
           Frequently Asked Questions
         </h1>
       </div>
@@ -362,23 +362,23 @@ export const FaqView: React.FC = () => {
           return (
             <div
               key={item.q}
-              className="rounded-xl border border-[#EAE4E0] bg-white overflow-hidden"
+              className="rounded-xl border border-[#EAE1D8] bg-white overflow-hidden"
             >
               <button
                 type="button"
                 aria-expanded={open}
                 onClick={() => setOpenIdx(open ? null : idx)}
-                className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left font-semibold text-sm text-[#1E161A]"
+                className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left font-semibold text-sm text-[#1C1613]"
               >
                 <span>{item.q}</span>
                 <ChevronDown
-                  className={`h-4 w-4 text-[#6E5F66] shrink-0 transition-transform ${
+                  className={`h-4 w-4 text-[#6E6058] shrink-0 transition-transform ${
                     open ? 'rotate-180' : ''
                   }`}
                 />
               </button>
               {open && (
-                <div className="px-5 pb-4 text-sm text-[#5C4F55] leading-relaxed border-t border-[#F3EFEC] pt-3">
+                <div className="px-5 pb-4 text-sm text-[#574B44] leading-relaxed border-t border-[#F3ECE4] pt-3">
                   {item.a}
                 </div>
               )}
@@ -448,23 +448,23 @@ export const EditorialPolicyView: React.FC<{
 
   return (
     <section className="py-10 space-y-6 max-w-3xl">
-      <div className="border-b border-[#EAE4E0] pb-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#C41E68]">
+      <div className="border-b border-[#EAE1D8] pb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#C2410C]">
           {copy.eyebrow}
         </p>
-        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1E161A]">
+        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1C1613]">
           {copy.title}
         </h1>
       </div>
 
-      <div className="space-y-4 text-sm text-[#4A3F45] leading-relaxed">
+      <div className="space-y-4 text-sm text-[#574B44] leading-relaxed">
         {copy.paragraphs.map((p) => (
           <p key={p}>{p}</p>
         ))}
         <ul className="space-y-2.5 pt-2">
           {copy.bullets.map((b) => (
-            <li key={b} className="flex items-start gap-2.5 text-[#1E161A]">
-              <Check className="h-4 w-4 text-[#C41E68] shrink-0 mt-0.5" aria-hidden="true" />
+            <li key={b} className="flex items-start gap-2.5 text-[#1C1613]">
+              <Check className="h-4 w-4 text-[#C2410C] shrink-0 mt-0.5" aria-hidden="true" />
               <span>{b}</span>
             </li>
           ))}

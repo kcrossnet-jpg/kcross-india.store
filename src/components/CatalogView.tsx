@@ -65,22 +65,22 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
 
   return (
     <section className="py-8 sm:py-10 space-y-6 sm:space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4 border-b border-[#EAE4E0] pb-5 sm:pb-6">
+      <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4 border-b border-[#EAE1D8] pb-5 sm:pb-6">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#C41E68]">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#C2410C]">
             {brand !== 'all' ? `${brand} Edit` : 'Complete Storefront Catalog'}
           </p>
-          <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1E161A]">
+          <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1C1613]">
             {activeCatInfo ? activeCatInfo.label : 'All Beauty Products'}
           </h1>
-          <p className="mt-1.5 text-sm text-[#6E5F66]">
+          <p className="mt-1.5 text-sm text-[#6E6058]">
             {activeCatInfo
               ? activeCatInfo.tagline
               : `Browse all ${PRODUCTS.length} curated skincare, makeup, haircare, fragrance, bath & appliance essentials.`}
           </p>
         </div>
 
-        <span className="text-sm font-medium text-[#6E5F66] tabular-nums">
+        <span className="text-sm font-medium text-[#6E6058] tabular-nums">
           Showing {results.length} of {PRODUCTS.length} products
         </span>
       </div>
@@ -95,8 +95,8 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           }}
           className={`rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors whitespace-nowrap ${
             category === 'all'
-              ? 'bg-[#1E161A] text-white'
-              : 'bg-white border border-[#EAE4E0] text-[#5C4F55] hover:border-[#1E161A]'
+              ? 'bg-[#1C1613] text-white'
+              : 'bg-white border border-[#EAE1D8] text-[#574B44] hover:border-[#1C1613]'
           }`}
         >
           All Departments
@@ -111,8 +111,8 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             }}
             className={`rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors whitespace-nowrap ${
               category === cat.id
-                ? 'bg-[#C41E68] text-white'
-                : 'bg-white border border-[#EAE4E0] text-[#5C4F55] hover:border-[#1E161A]'
+                ? 'bg-[#C2410C] text-white'
+                : 'bg-white border border-[#EAE1D8] text-[#574B44] hover:border-[#1C1613]'
             }`}
           >
             {cat.label}
@@ -123,14 +123,14 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
       {/* Subcategories if a specific category is selected */}
       {activeCatInfo && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-[#6E5F66] font-medium mr-1">Focus:</span>
+          <span className="text-[#6E6058] font-medium mr-1">Focus:</span>
           <button
             type="button"
             onClick={() => onChangeSubCategory('all')}
             className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
               subCategory === 'all'
-                ? 'bg-[#EFEBE8] text-[#1E161A]'
-                : 'text-[#6E5F66] hover:text-[#1E161A]'
+                ? 'bg-[#F3ECE4] text-[#1C1613]'
+                : 'text-[#6E6058] hover:text-[#1C1613]'
             }`}
           >
             All {activeCatInfo.label}
@@ -142,8 +142,8 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               onClick={() => onChangeSubCategory(sub)}
               className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                 subCategory.toLowerCase() === sub.toLowerCase()
-                  ? 'bg-[#EFEBE8] text-[#1E161A]'
-                  : 'text-[#6E5F66] hover:text-[#1E161A]'
+                  ? 'bg-[#F3ECE4] text-[#1C1613]'
+                  : 'text-[#6E6058] hover:text-[#1C1613]'
               }`}
             >
               {sub}
@@ -153,10 +153,10 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
       )}
 
       {/* Search + Brand + Weekly Deal + Sort Controls */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center bg-white border border-[#EAE4E0] rounded-xl p-3 sm:p-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center bg-white border border-[#EAE1D8] rounded-xl p-3 sm:p-3.5">
         <div className="sm:col-span-2 lg:col-span-5 relative">
           <Search
-            className="h-4 w-4 text-[#6E5F66] absolute left-3 top-1/2 -translate-y-1/2"
+            className="h-4 w-4 text-[#6E6058] absolute left-3 top-1/2 -translate-y-1/2"
             aria-hidden="true"
           />
           <input
@@ -165,7 +165,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             onChange={(e) => onChangeSearch(e.target.value)}
             placeholder="Search by product, brand, or ingredient (e.g. Olaplex, Snail, SPF)"
             aria-label="Search catalog products"
-            className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] pl-9 pr-3 py-2 text-sm text-[#1E161A] placeholder:text-[#8B7D84] focus:border-[#C41E68] focus:outline-none"
+            className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] pl-9 pr-3 py-2 text-sm text-[#1C1613] placeholder:text-[#8A7B72] focus:border-[#C2410C] focus:outline-none"
           />
         </div>
 
@@ -177,7 +177,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             id="brand-filter"
             value={brand}
             onChange={(e) => onChangeBrand(e.target.value)}
-            className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3 py-2 text-sm text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+            className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
           >
             <option value="all">All Brands ({uniqueBrands.length})</option>
             {uniqueBrands.map((b) => (
@@ -200,7 +200,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                 e.target.value as 'featured' | 'price-asc' | 'price-desc' | 'discount'
               )
             }
-            className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3 py-2 text-sm text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+            className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
           >
             <option value="featured">Sort: Featured</option>
             <option value="price-asc">Price: Low to High</option>
@@ -216,8 +216,8 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             aria-pressed={dealOnly}
             className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors whitespace-nowrap ${
               dealOnly
-                ? 'border-[#C41E68] bg-[#C41E68]/10 text-[#C41E68]'
-                : 'border-[#EAE4E0] bg-[#FAF8F6] text-[#5C4F55] hover:text-[#1E161A]'
+                ? 'border-[#C2410C] bg-[#C2410C]/10 text-[#C2410C]'
+                : 'border-[#EAE1D8] bg-[#FCF9F5] text-[#574B44] hover:text-[#1C1613]'
             }`}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
@@ -229,7 +229,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               type="button"
               onClick={onResetFilters}
               aria-label="Reset all filters"
-              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-semibold text-[#6E5F66] hover:text-[#1E161A] whitespace-nowrap"
+              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-semibold text-[#6E6058] hover:text-[#1C1613] whitespace-nowrap"
             >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Reset</span>
@@ -240,17 +240,17 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
 
       {/* Results Grid or Empty State */}
       {results.length === 0 ? (
-        <div className="rounded-2xl border border-[#EAE4E0] bg-white p-8 sm:p-12 text-center">
-          <h2 className="font-display text-2xl font-medium text-[#1E161A]">
+        <div className="rounded-2xl border border-[#EAE1D8] bg-white p-8 sm:p-12 text-center">
+          <h2 className="font-display text-2xl font-medium text-[#1C1613]">
             No matching products found
           </h2>
-          <p className="mt-2 text-sm text-[#6E5F66]">
+          <p className="mt-2 text-sm text-[#6E6058]">
             Try clearing a filter or searching for brands like OLAPLEX, Davidoff, CeraVe, or PAC.
           </p>
           <button
             type="button"
             onClick={onResetFilters}
-            className="mt-5 rounded-lg bg-[#1E161A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#352A30]"
+            className="mt-5 rounded-lg bg-[#1C1613] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#332924]"
           >
             Reset Filters
           </button>

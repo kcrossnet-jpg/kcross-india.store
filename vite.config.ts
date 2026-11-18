@@ -95,8 +95,8 @@ export default defineConfig(({mode}) => {
           short_name: 'kcross india',
           description:
             'Curated beauty, skincare, haircare, fragrance, appliances, and in-store studio services across India.',
-          theme_color: '#1E161A',
-          background_color: '#FAF8F6',
+          theme_color: '#C2410C',
+          background_color: '#FCF9F5',
           display: 'standalone',
           start_url: '/',
           scope: '/',
@@ -123,9 +123,9 @@ export default defineConfig(({mode}) => {
         },
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-          globIgnores: ['assets/aistudio/**'],
-          navigateFallbackDenylist: [/^\/api\//, /^\/assets\/aistudio\//],
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,woff,woff2}'],
+          globIgnores: ['assets/aistudio/node_*'],
+          navigateFallbackDenylist: [/^\/api\//, /^\/assets\/aistudio\/node_/],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

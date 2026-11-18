@@ -84,14 +84,14 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
 
   return (
     <section className="py-8 sm:py-10 space-y-10 sm:space-y-12">
-      <div className="border-b border-[#EAE4E0] pb-5 sm:pb-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#C41E68]">
+      <div className="border-b border-[#EAE1D8] pb-5 sm:pb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#C2410C]">
           Flagship Studios &amp; Consultations
         </p>
-        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1E161A]">
+        <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1C1613]">
           In-Store Beauty Services &amp; Store Locator
         </h1>
-        <p className="mt-1.5 text-sm text-[#6E5F66] max-w-[65ch]">
+        <p className="mt-1.5 text-sm text-[#6E6058] max-w-[65ch]">
           Book one-on-one consultations with our skin advisors, colour artists, and salon stylists
           across Mumbai, New Delhi, Bengaluru, and Hyderabad.
         </p>
@@ -101,7 +101,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
         {/* Left: 4 Services */}
         <div className="lg:col-span-7 space-y-4">
-          <h2 className="font-display text-2xl font-medium text-[#1E161A]">
+          <h2 className="font-display text-2xl font-medium text-[#1C1613]">
             1. Select a Studio Service
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -115,30 +115,30 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                   aria-pressed={active}
                   className={`flex flex-col justify-between rounded-xl border p-4 sm:p-5 text-left transition-all ${
                     active
-                      ? 'border-[#C41E68] bg-white ring-1 ring-[#C41E68]'
-                      : 'border-[#EAE4E0] bg-white hover:border-[#1E161A]'
+                      ? 'border-[#C2410C] bg-white ring-1 ring-[#C2410C]'
+                      : 'border-[#EAE1D8] bg-white hover:border-[#1C1613]'
                   }`}
                 >
                   <div>
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#6E5F66]">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#6E6058]">
                       <span>
                         {svc.category} · {svc.duration}
                       </span>
-                      <span className="font-semibold text-[#C41E68]">{svc.priceLabel}</span>
+                      <span className="font-semibold text-[#C2410C]">{svc.priceLabel}</span>
                     </div>
-                    <h3 className="mt-2 font-display text-lg font-medium text-[#1E161A]">
+                    <h3 className="mt-2 font-display text-lg font-medium text-[#1C1613]">
                       {svc.name}
                     </h3>
-                    <p className="mt-1.5 text-xs text-[#5C4F55] leading-relaxed">
+                    <p className="mt-1.5 text-xs text-[#574B44] leading-relaxed">
                       {svc.summary}
                     </p>
                   </div>
 
-                  <ul className="mt-4 pt-3 border-t border-[#F3EFEC] space-y-1.5">
+                  <ul className="mt-4 pt-3 border-t border-[#F5EFE8] space-y-1.5">
                     {svc.includes.map((inc) => (
-                      <li key={inc} className="flex items-start gap-2 text-xs text-[#1E161A]">
+                      <li key={inc} className="flex items-start gap-2 text-xs text-[#1C1613]">
                         <Check
-                          className="h-3.5 w-3.5 text-[#C41E68] shrink-0 mt-0.5"
+                          className="h-3.5 w-3.5 text-[#C2410C] shrink-0 mt-0.5"
                           aria-hidden="true"
                         />
                         <span>{inc}</span>
@@ -153,27 +153,27 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
           {/* Upcoming Confirmed Appointments */}
           {bookings.length > 0 && (
             <div className="pt-6 space-y-3">
-              <h3 className="font-display text-xl font-medium text-[#1E161A]">
+              <h3 className="font-display text-xl font-medium text-[#1C1613]">
                 Your Studio Appointments ({bookings.length})
               </h3>
               <div className="space-y-3">
                 {bookings.map((b) => (
                   <div
                     key={b.id}
-                    className="rounded-xl border border-[#EAE4E0] bg-white p-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4"
+                    className="rounded-xl border border-[#EAE1D8] bg-white p-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4"
                   >
                     <div>
-                      <div className="flex items-center gap-2 text-xs text-[#6E5F66]">
-                        <span className="font-mono-num font-semibold text-[#1E161A]">{b.id}</span>
+                      <div className="flex items-center gap-2 text-xs text-[#6E6058]">
+                        <span className="font-mono-num font-semibold text-[#1C1613]">{b.id}</span>
                         <span aria-hidden="true">·</span>
                         <span className="font-semibold text-[#2E6F40]">{b.status}</span>
                       </div>
-                      <p className="mt-1 text-sm font-semibold text-[#1E161A]">{b.serviceName}</p>
-                      <p className="text-xs text-[#6E5F66]">{b.storeName}</p>
+                      <p className="mt-1 text-sm font-semibold text-[#1C1613]">{b.serviceName}</p>
+                      <p className="text-xs text-[#6E6058]">{b.storeName}</p>
                     </div>
-                    <div className="sm:text-right text-xs text-[#1E161A] tabular-nums">
+                    <div className="sm:text-right text-xs text-[#1C1613] tabular-nums">
                       <p className="font-semibold">{b.date}</p>
-                      <p className="text-[#6E5F66]">{b.timeSlot} · {b.customerName}</p>
+                      <p className="text-[#6E6058]">{b.timeSlot} · {b.customerName}</p>
                     </div>
                   </div>
                 ))}
@@ -183,11 +183,11 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
         </div>
 
         {/* Right: Booking Form */}
-        <div className="lg:col-span-5 rounded-2xl border border-[#EAE4E0] bg-white p-5 sm:p-6">
-          <h2 className="font-display text-2xl font-medium text-[#1E161A]">
+        <div className="lg:col-span-5 rounded-2xl border border-[#EAE1D8] bg-white p-5 sm:p-6">
+          <h2 className="font-display text-2xl font-medium text-[#1C1613]">
             2. Reserve Your Slot
           </h2>
-          <p className="mt-1 text-xs text-[#6E5F66]">
+          <p className="mt-1 text-xs text-[#6E6058]">
             Instant confirmation · No advance payment required for complimentary sessions.
           </p>
 
@@ -203,14 +203,14 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
 
           <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4">
             <div>
-              <label htmlFor="booking-service" className="block text-xs font-semibold text-[#1E161A] mb-1">
+              <label htmlFor="booking-service" className="block text-xs font-semibold text-[#1C1613] mb-1">
                 Service
               </label>
               <select
                 id="booking-service"
                 value={selectedServiceId}
                 onChange={(e) => setSelectedServiceId(e.target.value)}
-                className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3 py-2.5 text-sm text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+                className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
               >
                 {SERVICES.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -224,14 +224,14 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
             </div>
 
             <div>
-              <label htmlFor="booking-store" className="block text-xs font-semibold text-[#1E161A] mb-1">
+              <label htmlFor="booking-store" className="block text-xs font-semibold text-[#1C1613] mb-1">
                 Store Location
               </label>
               <select
                 id="booking-store"
                 value={selectedStoreId}
                 onChange={(e) => setSelectedStoreId(e.target.value)}
-                className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3 py-2.5 text-sm text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+                className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
               >
                 {STORES.map((st) => (
                   <option key={st.id} value={st.id}>
@@ -246,7 +246,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label htmlFor="booking-date" className="block text-xs font-semibold text-[#1E161A] mb-1">
+                <label htmlFor="booking-date" className="block text-xs font-semibold text-[#1C1613] mb-1">
                   Preferred Date
                 </label>
                 <input
@@ -254,20 +254,20 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3 py-2.5 text-sm text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+                  className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
                 />
                 {errors.date && <p className="mt-1 text-xs text-[#B91C1C]">{errors.date}</p>}
               </div>
 
               <div>
-                <label htmlFor="booking-slot" className="block text-xs font-semibold text-[#1E161A] mb-1">
+                <label htmlFor="booking-slot" className="block text-xs font-semibold text-[#1C1613] mb-1">
                   Time Slot
                 </label>
                 <select
                   id="booking-slot"
                   value={timeSlot}
                   onChange={(e) => setTimeSlot(e.target.value)}
-                  className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3 py-2.5 text-sm text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+                  className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
                 >
                   {TIME_SLOTS.map((slot) => (
                     <option key={slot} value={slot}>
@@ -282,7 +282,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
             </div>
 
             <div>
-              <label htmlFor="booking-name" className="block text-xs font-semibold text-[#1E161A] mb-1">
+              <label htmlFor="booking-name" className="block text-xs font-semibold text-[#1C1613] mb-1">
                 Full Name
               </label>
               <input
@@ -291,7 +291,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="e.g. Meera Krishnan"
-                className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3 py-2.5 text-sm text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+                className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
               />
               {errors.customerName && (
                 <p className="mt-1 text-xs text-[#B91C1C]">{errors.customerName}</p>
@@ -299,7 +299,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
             </div>
 
             <div>
-              <label htmlFor="booking-email" className="block text-xs font-semibold text-[#1E161A] mb-1">
+              <label htmlFor="booking-email" className="block text-xs font-semibold text-[#1C1613] mb-1">
                 Email
               </label>
               <input
@@ -308,13 +308,13 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3 py-2.5 text-sm text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+                className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
               />
               {errors.email && <p className="mt-1 text-xs text-[#B91C1C]">{errors.email}</p>}
             </div>
 
             <div>
-              <label htmlFor="booking-notes" className="block text-xs font-semibold text-[#1E161A] mb-1">
+              <label htmlFor="booking-notes" className="block text-xs font-semibold text-[#1C1613] mb-1">
                 Skin / Hair Notes (Optional)
               </label>
               <textarea
@@ -323,14 +323,14 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Sensitive skin, colour-treated hair, or preferred fragrance notes"
-                className="w-full rounded-lg border border-[#EAE4E0] bg-[#FAF8F6] px-3 py-2 text-sm text-[#1E161A] focus:border-[#C41E68] focus:outline-none"
+                className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
               />
               {errors.notes && <p className="mt-1 text-xs text-[#B91C1C]">{errors.notes}</p>}
             </div>
 
             <button
               type="submit"
-              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#C41E68] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#A61757]"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412]"
             >
               <Calendar className="h-4 w-4" aria-hidden="true" />
               <span>Confirm Appointment</span>
@@ -340,18 +340,18 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
       </div>
 
       {/* Store Locator Directory */}
-      <div className="border-t border-[#EAE4E0] pt-10 space-y-6">
+      <div className="border-t border-[#EAE1D8] pt-10 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="font-display text-2xl font-medium text-[#1E161A]">
+            <h2 className="font-display text-2xl font-medium text-[#1C1613]">
               Flagship Store Locator
             </h2>
-            <p className="mt-1 text-sm text-[#6E5F66]">
+            <p className="mt-1 text-sm text-[#6E6058]">
               Walk in for instant product pickup, shade trials, and gift wrapping.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 bg-[#EFEBE8] p-1 rounded-lg">
+          <div className="flex flex-wrap gap-1.5 bg-[#F3ECE4] p-1 rounded-lg">
             {cities.map((c) => (
               <button
                 key={c}
@@ -359,8 +359,8 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                 onClick={() => setCityFilter(c)}
                 className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap ${
                   cityFilter === c
-                    ? 'bg-white text-[#1E161A] shadow-xs'
-                    : 'text-[#6E5F66] hover:text-[#1E161A]'
+                    ? 'bg-white text-[#1C1613] shadow-xs'
+                    : 'text-[#6E6058] hover:text-[#1C1613]'
                 }`}
               >
                 {c}
@@ -373,22 +373,22 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
           {visibleStores.map((store) => (
             <div
               key={store.id}
-              className="flex flex-col justify-between rounded-xl border border-[#EAE4E0] bg-white p-5"
+              className="flex flex-col justify-between rounded-xl border border-[#EAE1D8] bg-white p-5"
             >
               <div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#C41E68]">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#C2410C]">
                   {store.city}
                 </span>
-                <h3 className="mt-1 font-display text-xl font-medium text-[#1E161A]">
+                <h3 className="mt-1 font-display text-xl font-medium text-[#1C1613]">
                   {store.name}
                 </h3>
-                <div className="mt-3 space-y-2 text-xs text-[#5C4F55]">
+                <div className="mt-3 space-y-2 text-xs text-[#574B44]">
                   <p className="flex items-start gap-2">
-                    <MapPin className="h-3.5 w-3.5 text-[#6E5F66] shrink-0 mt-0.5" aria-hidden="true" />
+                    <MapPin className="h-3.5 w-3.5 text-[#6E6058] shrink-0 mt-0.5" aria-hidden="true" />
                     <span>{store.address}</span>
                   </p>
                   <p className="flex items-center gap-2">
-                    <Clock className="h-3.5 w-3.5 text-[#6E5F66] shrink-0" aria-hidden="true" />
+                    <Clock className="h-3.5 w-3.5 text-[#6E6058] shrink-0" aria-hidden="true" />
                     <span>{store.hours}</span>
                   </p>
                 </div>
@@ -400,7 +400,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                   setSelectedStoreId(store.id);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="mt-5 w-full rounded-lg border border-[#1E161A] px-3 py-2 text-xs font-semibold text-[#1E161A] hover:bg-[#1E161A] hover:text-white transition-colors"
+                className="mt-5 w-full rounded-lg border border-[#1C1613] px-3 py-2 text-xs font-semibold text-[#1C1613] hover:bg-[#1C1613] hover:text-white transition-colors"
               >
                 Book at This Store
               </button>
