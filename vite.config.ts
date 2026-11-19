@@ -11,6 +11,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, process.cwd(), '');
   const localEnvPath = path.resolve(import.meta.dirname, '.env.local');
   const localConfigPath = path.resolve(import.meta.dirname, 'firebase-applet-config.json');
+  const exampleConfigPath = path.resolve(import.meta.dirname, 'firebase-applet-config.example.json');
 
   let dotEnvLocal: Record<string, string> = {};
   if (fs.existsSync(localEnvPath)) {
@@ -22,9 +23,14 @@ export default defineConfig(({mode}) => {
   }
 
   let appletJson: Record<string, unknown> = {};
-  if (fs.existsSync(localConfigPath)) {
+  const configFileToRead = fs.existsSync(localConfigPath)
+    ? localConfigPath
+    : fs.existsSync(exampleConfigPath)
+      ? exampleConfigPath
+      : null;
+  if (configFileToRead) {
     try {
-      appletJson = JSON.parse(fs.readFileSync(localConfigPath, 'utf-8')) as Record<string, unknown>;
+      appletJson = JSON.parse(fs.readFileSync(configFileToRead, 'utf-8')) as Record<string, unknown>;
     } catch {
       appletJson = {};
     }
