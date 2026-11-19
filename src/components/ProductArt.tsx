@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { VisualForm } from '../types/store';
 
 interface ProductArtProps {
@@ -6,6 +6,8 @@ interface ProductArtProps {
   brand: string;
   surfaceTone: string;
   accentTone: string;
+  imageUrl?: string;
+  imageAlt?: string;
   className?: string;
 }
 
@@ -26,10 +28,34 @@ export const ProductArt: React.FC<ProductArtProps> = ({
   brand,
   surfaceTone,
   accentTone,
+  imageUrl,
+  imageAlt,
   className = '',
 }) => {
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [imageUrl]);
+
   const shortBrand = (BRAND_LABEL_MAP[brand] ?? brand.split(' ')[0]).toUpperCase();
   const labelFontSize = shortBrand.length > 8 ? '6.6' : '8.2';
+
+  if (imageUrl && !imageError) {
+    return (
+      <div
+        className={`relative flex items-center justify-center overflow-hidden select-none bg-white ${className}`}
+      >
+        <img
+          src={imageUrl}
+          alt={imageAlt || `${brand} product`}
+          onError={() => setImageError(true)}
+          referrerPolicy="no-referrer"
+          className="h-full w-full object-contain p-1.5 sm:p-2.5 transition-transform duration-300 group-hover:scale-[1.03]"
+        />
+      </div>
+    );
+  }
 
   if (form === 'giftcard') {
     const isLightCard = surfaceTone.toUpperCase() === '#FCF9F5';

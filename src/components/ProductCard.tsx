@@ -35,6 +35,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             brand={product.brand}
             surfaceTone={product.surfaceTone}
             accentTone={product.accentTone}
+            imageUrl={product.imageUrl}
+            imageAlt={`${product.brand} ${product.name}`}
             className="aspect-[4/3] w-full"
           />
         </button>

@@ -1,21 +1,22 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --font-display: "Playfair Display", Georgia, serif;
-    --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
-    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  }
+@theme {
+  --font-display: "Montserrat", system-ui, -apple-system, sans-serif;
+  --font-sans: "Montserrat", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
 
+@layer base {
   html, body {
     font-family: var(--font-sans);
     scroll-behavior: smooth;
     overflow-x: clip;
   }
 
-  h1, h2, h3, .font-display {
+  h1, h2, h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.015em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
     text-wrap: balance;
   }
 
@@ -23,6 +24,13 @@
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
 .tabular-nums {

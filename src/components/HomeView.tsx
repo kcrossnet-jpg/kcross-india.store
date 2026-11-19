@@ -64,7 +64,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#C2410C]">
               India’s Curated Beauty Destination
             </p>
-            <h1 className="mt-2.5 sm:mt-3 font-display text-3xl sm:text-4xl lg:text-[3.4rem] font-medium leading-[1.08] text-[#1C1613]">
+            <h1 className="mt-2.5 sm:mt-3 font-display text-3xl sm:text-4xl lg:text-[2.85rem] xl:text-[3.1rem] font-bold leading-[1.1] text-[#1C1613]">
               Authentic beauty, salon haircare &amp; studio services.
             </h1>
             <p className="mt-3 sm:mt-4 text-sm sm:text-base text-[#574B44] max-w-[52ch] leading-relaxed">
@@ -122,6 +122,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   brand={item.brand}
                   surfaceTone={item.surfaceTone}
                   accentTone={item.accentTone}
+                  imageUrl={item.imageUrl}
+                  imageAlt={`${item.brand} ${item.name}`}
                   className="aspect-[4/3] w-full rounded-lg"
                 />
                 <div className="mt-2.5 sm:mt-3 min-w-0">

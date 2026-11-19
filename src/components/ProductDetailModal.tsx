@@ -72,6 +72,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               brand={product.brand}
               surfaceTone={product.surfaceTone}
               accentTone={product.accentTone}
+              imageUrl={product.imageUrl}
+              imageAlt={`${product.brand} ${product.name}`}
               className="aspect-[4/3] sm:aspect-square w-full rounded-xl"
             />
             <div className="mt-4 flex items-center gap-2 text-xs text-[#6E6058]">

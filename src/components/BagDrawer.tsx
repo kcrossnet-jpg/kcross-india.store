@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, CheckCircle2, ShoppingBag, Trash2, X } from 'lucide-react';
-import { FREE_SHIPPING_THRESHOLD } from '../data/catalog';
+import { FREE_SHIPPING_THRESHOLD, PRODUCTS } from '../data/catalog';
 import { CartItem, OrderRecord } from '../types/store';
 import {
   calculateCartTotals,
@@ -269,6 +269,10 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                       brand={item.brand}
                       surfaceTone={item.surfaceTone}
                       accentTone={item.accentTone}
+                      imageUrl={
+                        PRODUCTS.find((p) => p.id === item.productId)?.imageUrl
+                      }
+                      imageAlt={`${item.brand} ${item.name}`}
                       className="h-20 w-20 shrink-0 rounded-lg"
                     />
                     <div className="flex-1 min-w-0 flex flex-col justify-between">

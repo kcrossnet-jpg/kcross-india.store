@@ -129,6 +129,8 @@ export default function App() {
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes('Quota exceeded')) {
           setAuthError('Firestore daily quota reached. Your local session continues to work.');
+        } else if (msg.includes('Missing or insufficient permissions')) {
+          setAuthError('Cloud sync requires a verified Google email on your account.');
         }
       });
 
@@ -217,6 +219,7 @@ export default function App() {
           mrp: variant.mrp,
           quantity: qty,
           visualForm: product.visualForm,
+          imageUrl: product.imageUrl,
           surfaceTone: product.surfaceTone,
           accentTone: product.accentTone,
         },
@@ -440,7 +443,7 @@ export default function App() {
               e.preventDefault();
               navigate('home');
             }}
-            className="inline-flex items-center gap-1.5 sm:gap-2.5 font-display text-[15px] sm:text-xl lg:text-2xl font-semibold tracking-tight text-[#1C1613] whitespace-nowrap shrink-0"
+            className="inline-flex items-center gap-1.5 sm:gap-2.5 font-display text-[15px] sm:text-lg lg:text-xl font-bold tracking-tight text-[#1C1613] whitespace-nowrap shrink-0"
           >
             <img
               src="/assets/aistudio/imgi_5_images_e8c25121.jpg"

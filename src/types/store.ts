@@ -45,6 +45,7 @@ export interface Product {
   reviewCount: number;
   inStock: boolean;
   visualForm: VisualForm;
+  imageUrl?: string;
   surfaceTone: string;
   accentTone: string;
   description: string;
@@ -125,6 +126,7 @@ export interface CartItem {
   mrp: number | null;
   quantity: number;
   visualForm: VisualForm;
+  imageUrl?: string;
   surfaceTone: string;
   accentTone: string;
   isGiftCard?: boolean;
