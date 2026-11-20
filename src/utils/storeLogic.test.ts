@@ -232,6 +232,7 @@ test('resolveFirebaseConfig rejects malformed or service-account env values and 
 test('phone normalization, email auth validation, and auth error mapping work accurately', async () => {
   const {
     normalizeIndianPhoneNumber,
+    normalizePhoneNumberWithCountry,
     validatePhoneNumberInput,
     validateEmailAuthForm,
     mapFirebaseAuthError,
@@ -241,9 +242,12 @@ test('phone normalization, email auth validation, and auth error mapping work ac
   assert.equal(normalizeIndianPhoneNumber('09876543210'), '+919876543210');
   assert.equal(normalizeIndianPhoneNumber('919876543210'), '+919876543210');
   assert.equal(normalizeIndianPhoneNumber('+44 7911 123456'), '+447911123456');
+  assert.equal(normalizePhoneNumberWithCountry('415 555 2671', '+1'), '+14155552671');
+  assert.equal(normalizePhoneNumberWithCountry('501234567', '+971'), '+971501234567');
   assert.equal(normalizeIndianPhoneNumber('12345'), '');
 
   assert.equal(validatePhoneNumberInput('9876543210'), null);
+  assert.equal(validatePhoneNumberInput('4155552671', '+1'), null);
   assert.ok(validatePhoneNumberInput(''));
   assert.ok(validatePhoneNumberInput('12345'));
 
@@ -261,5 +265,8 @@ test('phone normalization, email auth validation, and auth error mapping work ac
   assert.deepEqual(goodSignIn, {});
 
   assert.ok(mapFirebaseAuthError('auth/operation-not-allowed').includes('Firebase Console'));
+  assert.ok(mapFirebaseAuthError('auth/billing-not-enabled').includes('Blaze plan'));
+  assert.ok(mapFirebaseAuthError('auth/invalid-app-credential', 'kcrossindia.store').includes('kcrossindia.store'));
   assert.ok(mapFirebaseAuthError('auth/invalid-verification-code').includes('OTP'));
+  assert.ok(mapFirebaseAuthError('auth/custom-edge-case').includes('auth/custom-edge-case'));
 });

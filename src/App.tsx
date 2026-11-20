@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ConfirmationResult,
   createUserWithEmailAndPassword,
+  linkWithPhoneNumber,
   onAuthStateChanged,
   RecaptchaVerifier,
   reload,
@@ -12,6 +13,7 @@ import {
   signInWithPopup,
   signOut,
   updateProfile,
+  useDeviceLanguage,
   User,
 } from 'firebase/auth';
 import { Heart, Menu, Search, ShoppingBag, User as UserIcon, X } from 'lucide-react';
@@ -29,7 +31,7 @@ import {
 import {
   calculateCartTotals,
   mapFirebaseAuthError,
-  normalizeIndianPhoneNumber,
+  normalizePhoneNumberWithCountry,
 } from './utils/storeLogic';
 import {
   ensureCustomerDocs,
@@ -59,6 +61,13 @@ import {
 } from './components/MobileAppInstall';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { ServicesView } from './components/ServicesView';
+
+declare global {
+  interface Window {
+    recaptchaVerifier?: RecaptchaVerifier;
+    confirmationResult?: ConfirmationResult;
+  }
+}
 
 function loadStored<T>(key: string, fallback: T): T {
   try {
@@ -111,9 +120,14 @@ export default function App() {
     null
   );
   const [pendingPhoneLabel, setPendingPhoneLabel] = useState<string | null>(null);
+  const [pendingLinkOtpConfirmation, setPendingLinkOtpConfirmation] =
+    useState<ConfirmationResult | null>(null);
+  const [pendingLinkPhoneLabel, setPendingLinkPhoneLabel] = useState<string | null>(null);
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const recaptchaContainerElRef = useRef<HTMLElement | null>(null);
 
-  const clearRecaptcha = () => {
+  const clearRecaptcha = (containerEl?: HTMLElement | null) => {
+    const targetEl = containerEl ?? recaptchaContainerElRef.current;
     if (recaptchaVerifierRef.current) {
       try {
         recaptchaVerifierRef.current.clear();
@@ -121,6 +135,12 @@ export default function App() {
         // Ignore already-cleared widget errors
       }
       recaptchaVerifierRef.current = null;
+    }
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier = undefined;
+    }
+    if (targetEl) {
+      targetEl.replaceChildren();
     }
   };
 
@@ -381,7 +401,11 @@ export default function App() {
     }
   };
 
-  const handleSendPhoneOtp = async (rawPhone: string, recaptchaContainer: HTMLElement | null) => {
+  const handleSendPhoneOtp = async (
+    rawPhone: string,
+    recaptchaContainer: HTMLElement | null,
+    countryDialCode = '+91'
+  ) => {
     setAuthError(null);
     if (!auth) {
       showFirebaseEnvError();
@@ -391,24 +415,32 @@ export default function App() {
       setAuthError('Security check container is not ready. Please try again.');
       return;
     }
-    const normalizedPhone = normalizeIndianPhoneNumber(rawPhone);
+    const normalizedPhone = normalizePhoneNumberWithCountry(rawPhone, countryDialCode);
     if (!normalizedPhone) {
-      setAuthError('Enter a valid 10-digit Indian mobile number or include country code (+91...).');
+      setAuthError('Enter a valid mobile number (e.g. +91 98765 43210).');
       return;
     }
     setIsSigningIn(true);
     try {
-      clearRecaptcha();
-      const verifier = new RecaptchaVerifier(auth, recaptchaContainer, {
+      recaptchaContainerElRef.current = recaptchaContainer;
+      clearRecaptcha(recaptchaContainer);
+      useDeviceLanguage(auth);
+      const appVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
         size: 'invisible',
+        'expired-callback': () => {
+          clearRecaptcha(recaptchaContainer);
+        },
       });
-      recaptchaVerifierRef.current = verifier;
-      const confirmation = await signInWithPhoneNumber(auth, normalizedPhone, verifier);
-      setPendingOtpConfirmation(confirmation);
+      recaptchaVerifierRef.current = appVerifier;
+      window.recaptchaVerifier = appVerifier;
+      await appVerifier.render();
+      const confirmationResult = await signInWithPhoneNumber(auth, normalizedPhone, appVerifier);
+      window.confirmationResult = confirmationResult;
+      setPendingOtpConfirmation(confirmationResult);
       setPendingPhoneLabel(normalizedPhone);
-      notify(`OTP sent to ${normalizedPhone}`);
+      notify(`Verification code sent to ${normalizedPhone}`);
     } catch (error) {
-      clearRecaptcha();
+      clearRecaptcha(recaptchaContainer);
       const code = (error as { code?: string })?.code || '';
       setAuthError(mapFirebaseAuthError(code, window.location.hostname));
     } finally {
@@ -418,23 +450,27 @@ export default function App() {
 
   const handleVerifyPhoneOtp = async (otpCode: string, optionalName?: string) => {
     setAuthError(null);
-    if (!pendingOtpConfirmation) {
-      setAuthError('Your OTP session expired. Please request a new OTP.');
+    const activeConfirmation = pendingOtpConfirmation ?? window.confirmationResult ?? null;
+    if (!activeConfirmation) {
+      setAuthError('Your verification session expired. Please request a new code.');
       return;
     }
     setIsSigningIn(true);
     try {
-      const cred = await pendingOtpConfirmation.confirm(otpCode.trim());
+      const result = await activeConfirmation.confirm(otpCode.trim());
+      const user = result.user;
       if (optionalName && optionalName.trim()) {
-        await updateProfile(cred.user, {
+        await updateProfile(user, {
           displayName: optionalName.trim().slice(0, 120),
-        });
+        }).catch(() => {});
       }
+      window.confirmationResult = undefined;
       setPendingOtpConfirmation(null);
       setPendingPhoneLabel(null);
       clearRecaptcha();
+      setAuthUser(user);
       setAuthRevision((r) => r + 1);
-      notify(`Signed in with ${cred.user.phoneNumber || 'mobile number'}`);
+      notify(`Verified & signed in with ${user.phoneNumber || 'mobile number'}`);
     } catch (error) {
       const code = (error as { code?: string })?.code || '';
       setAuthError(mapFirebaseAuthError(code, window.location.hostname));
@@ -444,8 +480,87 @@ export default function App() {
   };
 
   const handleResetPhoneOtp = () => {
+    window.confirmationResult = undefined;
     setPendingOtpConfirmation(null);
     setPendingPhoneLabel(null);
+    setAuthError(null);
+    clearRecaptcha();
+  };
+
+  const handleSendLinkPhoneOtp = async (
+    rawPhone: string,
+    recaptchaContainer: HTMLElement | null
+  ) => {
+    setAuthError(null);
+    if (!auth || !auth.currentUser) {
+      setAuthError('Sign in first to link a mobile number.');
+      return;
+    }
+    if (!recaptchaContainer) {
+      setAuthError('Security check container is not ready. Please try again.');
+      return;
+    }
+    const normalizedPhone = normalizePhoneNumberWithCountry(rawPhone, '+91');
+    if (!normalizedPhone) {
+      setAuthError('Enter a valid 10-digit Indian mobile number or include country code (+91...).');
+      return;
+    }
+    setIsSigningIn(true);
+    try {
+      recaptchaContainerElRef.current = recaptchaContainer;
+      clearRecaptcha(recaptchaContainer);
+      useDeviceLanguage(auth);
+      const appVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
+        size: 'invisible',
+        'expired-callback': () => {
+          clearRecaptcha(recaptchaContainer);
+        },
+      });
+      recaptchaVerifierRef.current = appVerifier;
+      window.recaptchaVerifier = appVerifier;
+      await appVerifier.render();
+      const confirmationResult = await linkWithPhoneNumber(
+        auth.currentUser,
+        normalizedPhone,
+        appVerifier
+      );
+      setPendingLinkOtpConfirmation(confirmationResult);
+      setPendingLinkPhoneLabel(normalizedPhone);
+      notify(`Verification code sent to ${normalizedPhone}`);
+    } catch (error) {
+      clearRecaptcha(recaptchaContainer);
+      const code = (error as { code?: string })?.code || '';
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleConfirmLinkPhoneOtp = async (otpCode: string) => {
+    setAuthError(null);
+    if (!pendingLinkOtpConfirmation) {
+      setAuthError('Your verification session expired. Please request a new code.');
+      return;
+    }
+    setIsSigningIn(true);
+    try {
+      await pendingLinkOtpConfirmation.confirm(otpCode.trim());
+      setPendingLinkOtpConfirmation(null);
+      setPendingLinkPhoneLabel(null);
+      clearRecaptcha();
+      setAuthRevision((r) => r + 1);
+      notify('Mobile number verified and linked to your account');
+    } catch (error) {
+      const code = (error as { code?: string })?.code || '';
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleResetLinkPhoneOtp = () => {
+    setPendingLinkOtpConfirmation(null);
+    setPendingLinkPhoneLabel(null);
     setAuthError(null);
     clearRecaptcha();
   };
@@ -554,8 +669,11 @@ export default function App() {
     if (!auth) return;
     try {
       await signOut(auth);
+      window.confirmationResult = undefined;
       setPendingOtpConfirmation(null);
       setPendingPhoneLabel(null);
+      setPendingLinkOtpConfirmation(null);
+      setPendingLinkPhoneLabel(null);
       clearRecaptcha();
       setAuthError(null);
       notify('Signed out of your customer account');
@@ -931,10 +1049,14 @@ export default function App() {
             authError={authError}
             isSigningIn={isSigningIn}
             pendingPhoneLabel={pendingPhoneLabel}
+            pendingLinkPhoneLabel={pendingLinkPhoneLabel}
             onSignInWithGoogle={handleGoogleSignIn}
             onSendPhoneOtp={handleSendPhoneOtp}
             onVerifyPhoneOtp={handleVerifyPhoneOtp}
             onResetPhoneOtp={handleResetPhoneOtp}
+            onSendLinkPhoneOtp={handleSendLinkPhoneOtp}
+            onConfirmLinkPhoneOtp={handleConfirmLinkPhoneOtp}
+            onResetLinkPhoneOtp={handleResetLinkPhoneOtp}
             onEmailSignIn={handleEmailSignIn}
             onEmailRegister={handleEmailRegister}
             onSendPasswordReset={handleSendPasswordReset}

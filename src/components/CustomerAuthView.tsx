@@ -25,12 +25,22 @@ import {
 } from '../types/store';
 import {
   formatINR,
+  normalizePhoneNumberWithCountry,
   validateCustomerProfileForm,
   validateEmail,
   validateEmailAuthForm,
   validatePhoneNumberInput,
 } from '../utils/storeLogic';
 import { PWAInstallButton } from './MobileAppInstall';
+
+const COUNTRY_CODES = [
+  { code: '+91', label: '+91 (IN)' },
+  { code: '+1', label: '+1 (US/CA)' },
+  { code: '+44', label: '+44 (UK)' },
+  { code: '+971', label: '+971 (UAE)' },
+  { code: '+65', label: '+65 (SG)' },
+  { code: '+61', label: '+61 (AU)' },
+];
 
 interface CustomerAuthViewProps {
   authReady: boolean;
@@ -43,10 +53,18 @@ interface CustomerAuthViewProps {
   authError: string | null;
   isSigningIn: boolean;
   pendingPhoneLabel: string | null;
+  pendingLinkPhoneLabel: string | null;
   onSignInWithGoogle: () => void;
-  onSendPhoneOtp: (rawPhone: string, recaptchaContainer: HTMLElement | null) => Promise<void>;
+  onSendPhoneOtp: (
+    rawPhone: string,
+    recaptchaContainer: HTMLElement | null,
+    countryDialCode?: string
+  ) => Promise<void>;
   onVerifyPhoneOtp: (otpCode: string, optionalName?: string) => Promise<void>;
   onResetPhoneOtp: () => void;
+  onSendLinkPhoneOtp: (rawPhone: string, recaptchaContainer: HTMLElement | null) => Promise<void>;
+  onConfirmLinkPhoneOtp: (otpCode: string) => Promise<void>;
+  onResetLinkPhoneOtp: () => void;
   onEmailSignIn: (email: string, password: string) => Promise<void>;
   onEmailRegister: (fullName: string, email: string, password: string) => Promise<void>;
   onSendPasswordReset: (email: string) => Promise<boolean>;
@@ -77,10 +95,14 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
   authError,
   isSigningIn,
   pendingPhoneLabel,
+  pendingLinkPhoneLabel,
   onSignInWithGoogle,
   onSendPhoneOtp,
   onVerifyPhoneOtp,
   onResetPhoneOtp,
+  onSendLinkPhoneOtp,
+  onConfirmLinkPhoneOtp,
+  onResetLinkPhoneOtp,
   onEmailSignIn,
   onEmailRegister,
   onSendPasswordReset,
@@ -97,11 +119,18 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
   const [emailMode, setEmailMode] = useState<'signin' | 'register'>('signin');
 
   // Mobile OTP state
+  const [countryDialCode, setCountryDialCode] = useState('+91');
   const [mobileInput, setMobileInput] = useState('');
   const [otpInput, setOtpInput] = useState('');
   const [otpNameInput, setOtpNameInput] = useState('');
   const [mobileFieldError, setMobileFieldError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Authenticated phone-link OTP state
+  const [linkOtpInput, setLinkOtpInput] = useState('');
+  const [linkOtpError, setLinkOtpError] = useState<string | null>(null);
+  const linkRecaptchaContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Email ID login / register state
   const [emailFullName, setEmailFullName] = useState('');
@@ -121,6 +150,20 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    if (pendingPhoneLabel) {
+      setResendCooldown(30);
+    } else {
+      setResendCooldown(0);
+    }
+  }, [pendingPhoneLabel]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (profile) {
@@ -159,21 +202,42 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
     setMobileFieldError(null);
 
     if (!pendingPhoneLabel) {
-      const err = validatePhoneNumberInput(mobileInput);
+      const err = validatePhoneNumberInput(mobileInput, countryDialCode);
       if (err) {
         setMobileFieldError(err);
         return;
       }
-      await onSendPhoneOtp(mobileInput, recaptchaContainerRef.current);
+      await onSendPhoneOtp(mobileInput, recaptchaContainerRef.current, countryDialCode);
       return;
     }
 
     const cleanedOtp = otpInput.replace(/\D/g, '');
     if (cleanedOtp.length !== 6) {
-      setMobileFieldError('Enter the 6-digit OTP received via SMS.');
+      setMobileFieldError('Enter the 6-digit verification code received via SMS.');
       return;
     }
     await onVerifyPhoneOtp(cleanedOtp, otpNameInput);
+  };
+
+  const handleSendLinkCodeClick = async () => {
+    setLinkOtpError(null);
+    const normalized = normalizePhoneNumberWithCountry(profilePhone, '+91');
+    if (!normalized) {
+      setLinkOtpError('Enter a valid 10-digit Indian mobile number (or +country format) first.');
+      return;
+    }
+    await onSendLinkPhoneOtp(normalized, linkRecaptchaContainerRef.current);
+  };
+
+  const handleVerifyLinkCodeClick = async () => {
+    setLinkOtpError(null);
+    const cleaned = linkOtpInput.replace(/\D/g, '');
+    if (cleaned.length !== 6) {
+      setLinkOtpError('Enter the 6-digit SMS code sent to your phone.');
+      return;
+    }
+    await onConfirmLinkPhoneOtp(cleaned);
+    setLinkOtpInput('');
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -275,8 +339,8 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
             Login or Register
           </h1>
           <p className="mt-1.5 text-sm text-[#6E6058] max-w-[62ch]">
-            Enter your mobile number for instant OTP sign-in, sign in or register with your Email ID,
-            or continue with Google to sync your wishlist and pan-India orders.
+            Enter your mobile number to receive a 6-digit SMS verification code, sign in or
+            register with your Email ID, or continue with Google.
           </p>
         </div>
 
@@ -347,9 +411,24 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                           Enter Mobile Number
                         </label>
                         <div className="flex items-stretch rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] focus-within:border-[#C2410C]">
-                          <span className="inline-flex items-center px-3 text-xs font-semibold text-[#574B44] border-r border-[#EAE1D8] bg-[#F6EFE7] rounded-l-lg">
-                            +91
-                          </span>
+                          <label htmlFor="auth-country-code" className="sr-only">
+                            Country code
+                          </label>
+                          <select
+                            id="auth-country-code"
+                            value={countryDialCode}
+                            onChange={(e) => {
+                              setCountryDialCode(e.target.value);
+                              setMobileFieldError(null);
+                            }}
+                            className="rounded-l-lg border-r border-[#EAE1D8] bg-[#F6EFE7] px-2.5 py-2.5 text-xs font-semibold text-[#1C1613] focus:outline-none"
+                          >
+                            {COUNTRY_CODES.map((c) => (
+                              <option key={c.code} value={c.code}>
+                                {c.label}
+                              </option>
+                            ))}
+                          </select>
                           <input
                             id="auth-mobile"
                             type="tel"
@@ -360,7 +439,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                               setMobileInput(e.target.value);
                               setMobileFieldError(null);
                             }}
-                            placeholder="98765 43210"
+                            placeholder={countryDialCode === '+91' ? '98765 43210' : 'Mobile number'}
                             className="w-full rounded-r-lg bg-transparent px-3 py-2.5 text-sm font-mono-num text-[#1C1613] placeholder:text-[#8A7B72] focus:outline-none"
                           />
                         </div>
@@ -368,9 +447,8 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                           <p className="mt-1.5 text-xs text-[#B91C1C]">{mobileFieldError}</p>
                         ) : (
                           <p className="mt-1.5 text-[11px] text-[#6E6058]">
-                            New or existing customer? Enter your 10-digit Indian mobile (or{' '}
-                            <span className="font-mono-num">+country</span>) to receive a 6-digit
-                            SMS OTP.
+                            We&apos;ll send a 6-digit SMS verification code to sign in or create
+                            your account automatically.
                           </p>
                         )}
                       </div>
@@ -380,14 +458,14 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                         disabled={isSigningIn}
                         className="w-full rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412] disabled:opacity-60"
                       >
-                        {isSigningIn ? 'Sending OTP...' : 'Send OTP'}
+                        {isSigningIn ? 'Sending Verification Code...' : 'Send Verification Code'}
                       </button>
                     </>
                   ) : (
                     <>
-                      <div className="rounded-xl border border-[#EAE1D8] bg-[#FCF9F5] px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
+                      <div className="rounded-xl border border-[#C6DFCB] bg-[#F3FAF5] px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs text-[#1E462A]">
                         <div>
-                          <span className="text-[#6E6058]">OTP sent to </span>
+                          <span>SMS code sent to </span>
                           <span className="font-mono-num font-bold text-[#1C1613]">
                             {pendingPhoneLabel}
                           </span>
@@ -410,13 +488,14 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                           htmlFor="auth-otp"
                           className="block text-xs font-semibold text-[#1C1613] mb-1.5"
                         >
-                          6-Digit SMS OTP
+                          6-Digit SMS Verification Code
                         </label>
                         <input
                           id="auth-otp"
                           type="text"
                           inputMode="numeric"
                           maxLength={6}
+                          autoFocus
                           autoComplete="one-time-code"
                           value={otpInput}
                           onChange={(e) => {
@@ -436,7 +515,10 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                           htmlFor="auth-otp-name"
                           className="block text-xs font-semibold text-[#1C1613] mb-1.5"
                         >
-                          Your Name <span className="font-normal text-[#6E6058]">(optional for new accounts)</span>
+                          Your Name{' '}
+                          <span className="font-normal text-[#6E6058]">
+                            (optional for new accounts)
+                          </span>
                         </label>
                         <input
                           id="auth-otp-name"
@@ -459,16 +541,23 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                         </button>
                         <button
                           type="button"
-                          disabled={isSigningIn}
-                          onClick={() => onSendPhoneOtp(pendingPhoneLabel, recaptchaContainerRef.current)}
-                          className="rounded-lg border border-[#D8CEC4] bg-white px-4 py-3 text-xs font-semibold text-[#1C1613] hover:border-[#1C1613] disabled:opacity-60"
+                          disabled={isSigningIn || resendCooldown > 0}
+                          onClick={async () => {
+                            await onSendPhoneOtp(
+                              pendingPhoneLabel,
+                              recaptchaContainerRef.current,
+                              countryDialCode
+                            );
+                            setResendCooldown(30);
+                          }}
+                          className="rounded-lg border border-[#D8CEC4] bg-white px-4 py-3 text-xs font-semibold text-[#1C1613] hover:border-[#1C1613] disabled:opacity-60 tabular-nums"
                         >
-                          Resend OTP
+                          {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
                         </button>
                       </div>
                     </>
                   )}
-                  <div ref={recaptchaContainerRef} className="min-h-[1px]" />
+                  <div id="recaptcha-container" ref={recaptchaContainerRef} className="min-h-[1px]" />
                 </form>
               )}
 
@@ -757,7 +846,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
               <p className="mt-0.5 text-xs text-[#574B44]">
                 We sent a verification link to{' '}
                 <span className="font-semibold">{authUser.email}</span>. Click it, then refresh
-                your session.
+                your session—or verify your mobile number via SMS OTP below.
               </p>
             </div>
           </div>
@@ -874,6 +963,15 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
             Used to prefill shipping details at checkout. Stored privately to your account.
           </p>
 
+          {authError && (
+            <div
+              role="alert"
+              className="mt-4 rounded-xl border border-[#F5C2C7] bg-[#FDF2F2] p-3 text-xs text-[#842029]"
+            >
+              {authError}
+            </div>
+          )}
+
           {saveMessage && (
             <div
               role="status"
@@ -925,22 +1023,91 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
               </div>
 
               <div>
-                <label htmlFor="prof-phone" className="block text-xs font-semibold text-[#1C1613] mb-1">
-                  Mobile Number
-                </label>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <label htmlFor="prof-phone" className="block text-xs font-semibold text-[#1C1613]">
+                    Mobile Number
+                  </label>
+                  {authUser.phoneNumber ? (
+                    <span className="text-[11px] font-semibold text-[#1E462A]">OTP Verified</span>
+                  ) : (
+                    !pendingLinkPhoneLabel && (
+                      <button
+                        type="button"
+                        disabled={isSigningIn}
+                        onClick={handleSendLinkCodeClick}
+                        className="text-[11px] font-semibold text-[#C2410C] hover:underline disabled:opacity-60"
+                      >
+                        Send SMS Code
+                      </button>
+                    )
+                  )}
+                </div>
                 <input
                   id="prof-phone"
                   type="tel"
                   value={profilePhone}
-                  onChange={(e) => setProfilePhone(e.target.value)}
+                  onChange={(e) => {
+                    setProfilePhone(e.target.value);
+                    setLinkOtpError(null);
+                  }}
                   placeholder="+91 98765 43210"
                   className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm font-mono-num text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
                 />
                 {formErrors.phoneNumber && (
                   <p className="mt-1 text-xs text-[#B91C1C]">{formErrors.phoneNumber}</p>
                 )}
+                {linkOtpError && (
+                  <p className="mt-1 text-xs text-[#B91C1C]">{linkOtpError}</p>
+                )}
               </div>
             </div>
+
+            {pendingLinkPhoneLabel && !authUser.phoneNumber && (
+              <div className="rounded-xl border border-[#EAE1D8] bg-[#FCF9F5] p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#574B44]">
+                    Enter SMS code sent to{' '}
+                    <span className="font-mono-num font-semibold text-[#1C1613]">
+                      {pendingLinkPhoneLabel}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLinkOtpInput('');
+                      setLinkOtpError(null);
+                      onResetLinkPhoneOtp();
+                    }}
+                    className="font-semibold text-[#C2410C] hover:underline"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <div className="flex items-stretch gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={linkOtpInput}
+                    onChange={(e) => {
+                      setLinkOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6));
+                      setLinkOtpError(null);
+                    }}
+                    placeholder="6-digit OTP"
+                    className="flex-1 rounded-lg border border-[#EAE1D8] bg-white px-3 py-2 text-sm font-mono-num text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={isSigningIn}
+                    onClick={handleVerifyLinkCodeClick}
+                    className="rounded-lg bg-[#1C1613] px-4 py-2 text-xs font-semibold text-white hover:bg-[#332924] disabled:opacity-60"
+                  >
+                    {isSigningIn ? 'Verifying...' : 'Verify Phone'}
+                  </button>
+                </div>
+              </div>
+            )}
+            <div ref={linkRecaptchaContainerRef} className="min-h-[1px]" />
 
             <div>
               <label htmlFor="prof-address" className="block text-xs font-semibold text-[#1C1613] mb-1">
