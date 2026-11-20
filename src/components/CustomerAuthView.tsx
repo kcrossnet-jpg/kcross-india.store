@@ -59,11 +59,11 @@ interface CustomerAuthViewProps {
     rawPhone: string,
     recaptchaContainer: HTMLElement | null,
     countryDialCode?: string
-  ) => Promise<void>;
-  onVerifyPhoneOtp: (otpCode: string, optionalName?: string) => Promise<void>;
+  ) => Promise<boolean>;
+  onVerifyPhoneOtp: (otpCode: string, optionalName?: string) => Promise<boolean>;
   onResetPhoneOtp: () => void;
   onSendLinkPhoneOtp: (rawPhone: string, recaptchaContainer: HTMLElement | null) => Promise<void>;
-  onConfirmLinkPhoneOtp: (otpCode: string) => Promise<void>;
+  onConfirmLinkPhoneOtp: (otpCode: string) => Promise<boolean>;
   onResetLinkPhoneOtp: () => void;
   onEmailSignIn: (email: string, password: string) => Promise<void>;
   onEmailRegister: (fullName: string, email: string, password: string) => Promise<void>;
@@ -216,7 +216,11 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
       setMobileFieldError('Enter the 6-digit verification code received via SMS.');
       return;
     }
-    await onVerifyPhoneOtp(cleanedOtp, otpNameInput);
+    const ok = await onVerifyPhoneOtp(cleanedOtp, otpNameInput);
+    if (ok) {
+      setOtpInput('');
+      setOtpNameInput('');
+    }
   };
 
   const handleSendLinkCodeClick = async () => {
@@ -236,8 +240,10 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
       setLinkOtpError('Enter the 6-digit SMS code sent to your phone.');
       return;
     }
-    await onConfirmLinkPhoneOtp(cleaned);
-    setLinkOtpInput('');
+    const ok = await onConfirmLinkPhoneOtp(cleaned);
+    if (ok) {
+      setLinkOtpInput('');
+    }
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -309,7 +315,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
       const msg =
         err instanceof Error && err.message.includes('Quota exceeded')
           ? 'Daily database quota reached. Please try again tomorrow.'
-          : err instanceof Error && err.message.includes('Verify your email ID')
+          : err instanceof Error && err.message.includes('Verify your Email ID')
           ? err.message
           : 'Could not save your delivery details right now. Please try again.';
       setSaveMessage({ ok: false, text: msg });
@@ -454,6 +460,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                       </div>
 
                       <button
+                        id="sign-in-button"
                         type="submit"
                         disabled={isSigningIn}
                         className="w-full rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412] disabled:opacity-60"
@@ -543,12 +550,14 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                           type="button"
                           disabled={isSigningIn || resendCooldown > 0}
                           onClick={async () => {
-                            await onSendPhoneOtp(
+                            const sent = await onSendPhoneOtp(
                               pendingPhoneLabel,
                               recaptchaContainerRef.current,
                               countryDialCode
                             );
-                            setResendCooldown(30);
+                            if (sent) {
+                              setResendCooldown(30);
+                            }
                           }}
                           className="rounded-lg border border-[#D8CEC4] bg-white px-4 py-3 text-xs font-semibold text-[#1C1613] hover:border-[#1C1613] disabled:opacity-60 tabular-nums"
                         >

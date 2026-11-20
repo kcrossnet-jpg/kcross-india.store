@@ -7,6 +7,7 @@ import {
   filterProducts,
   formatINR,
   formatOrderItemsSummary,
+  getLocalIsoDate,
   lookupOrder,
   validateBookingForm,
   validateCheckoutForm,
@@ -92,7 +93,7 @@ test('calculateCartTotals waives shipping on digital gift cards', () => {
   assert.ok(totals.couponError?.includes('Gift Cards'));
 });
 
-test('validateCheckoutForm and validateBookingForm catch empty/invalid inputs', () => {
+test('validateCheckoutForm and validateBookingForm catch empty/invalid/past inputs', () => {
   const badCheckout = validateCheckoutForm({
     customerName: 'A',
     email: 'invalid-email',
@@ -136,7 +137,37 @@ test('validateCheckoutForm and validateBookingForm catch empty/invalid inputs', 
     email: 'bad',
     notes: 'N'.repeat(405),
   });
-  assert.ok(badBooking.serviceId && badBooking.email && badBooking.notes);
+  assert.ok(badBooking.serviceId && badBooking.email && badBooking.notes && badBooking.date);
+
+  const today = getLocalIsoDate(0);
+  const yesterday = getLocalIsoDate(-1);
+  const tomorrow = getLocalIsoDate(1);
+  assert.match(today, /^\d{4}-\d{2}-\d{2}$/);
+  const pastBooking = validateBookingForm(
+    {
+      serviceId: 'srv-1',
+      storeId: 'store-bom',
+      date: yesterday,
+      timeSlot: '11:30 AM',
+      customerName: 'Ananya Rao',
+      email: 'ananya@example.in',
+    },
+    today
+  );
+  assert.ok(pastBooking.date?.includes('today or an upcoming date'));
+
+  const validBooking = validateBookingForm(
+    {
+      serviceId: 'srv-1',
+      storeId: 'store-bom',
+      date: tomorrow,
+      timeSlot: '11:30 AM',
+      customerName: 'Ananya Rao',
+      email: 'ananya@example.in',
+    },
+    today
+  );
+  assert.deepEqual(validBooking, {});
 
   const badContact = validateContactForm({
     name: '',
@@ -155,20 +186,23 @@ test('lookupOrder finds seeded orders case-insensitively and formatINR formats c
   assert.equal(formatINR(4550), '₹4,550');
 });
 
-test('validateCustomerProfileForm and formatOrderItemsSummary enforce blueprint bounds', () => {
+test('validateCustomerProfileForm and formatOrderItemsSummary enforce blueprint bounds and E.164 phones', () => {
   const badProfile = validateCustomerProfileForm({
     displayName: 'A',
+    phoneNumber: '123',
     defaultAddress: 'abc',
     defaultCity: 'X',
     defaultPinCode: '012345',
   });
   assert.ok(badProfile.displayName);
+  assert.ok(badProfile.phoneNumber);
   assert.ok(badProfile.defaultAddress);
   assert.ok(badProfile.defaultCity);
   assert.ok(badProfile.defaultPinCode);
 
   const goodProfile = validateCustomerProfileForm({
     displayName: 'Meera Krishnan',
+    phoneNumber: '+14155552671',
     defaultAddress: '',
     defaultCity: '',
     defaultPinCode: '',
@@ -267,6 +301,8 @@ test('phone normalization, email auth validation, and auth error mapping work ac
   assert.ok(mapFirebaseAuthError('auth/operation-not-allowed').includes('Firebase Console'));
   assert.ok(mapFirebaseAuthError('auth/billing-not-enabled').includes('Blaze plan'));
   assert.ok(mapFirebaseAuthError('auth/invalid-app-credential', 'kcrossindia.store').includes('kcrossindia.store'));
+  assert.ok(mapFirebaseAuthError('auth/app-not-authorized', 'kcrossindia.store').includes('kcrossindia.store'));
+  assert.ok(mapFirebaseAuthError('auth/web-storage-unsupported').includes('storage'));
   assert.ok(mapFirebaseAuthError('auth/invalid-verification-code').includes('OTP'));
   assert.ok(mapFirebaseAuthError('auth/custom-edge-case').includes('auth/custom-edge-case'));
 });

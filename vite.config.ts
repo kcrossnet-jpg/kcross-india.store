@@ -113,8 +113,8 @@ export default defineConfig(({mode}) => {
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,woff,woff2}'],
-          globIgnores: ['assets/aistudio/node_*'],
-          navigateFallbackDenylist: [/^\/api\//, /^\/assets\/aistudio\/node_/],
+          globIgnores: ['assets/aistudio/*.js', 'assets/aistudio/*.html'],
+          navigateFallbackDenylist: [/^\/api\//, /^\/assets\/aistudio\/.*\.(js|html)$/],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

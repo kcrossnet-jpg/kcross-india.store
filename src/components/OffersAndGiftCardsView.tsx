@@ -142,7 +142,7 @@ interface GiftCardsViewProps {
 }
 
 interface GiftCardEdition {
-  id: 'espresso' | 'saffron' | 'ivory';
+  id: 'espresso' | 'saffron' | 'gold';
   label: string;
   subtitle: string;
   surfaceTone: string;
@@ -182,17 +182,17 @@ const GIFT_EDITIONS: GiftCardEdition[] = [
     swatchClass: 'bg-[#C2410C] border-[#9A3412]',
   },
   {
-    id: 'ivory',
-    label: 'Warm Ivory Edition',
-    subtitle: 'Cotton linen · Espresso ink detail',
-    surfaceTone: '#FCF9F5',
-    accentTone: '#C2410C',
+    id: 'gold',
+    label: 'Gold Edition',
+    subtitle: 'Brushed gold foil · Espresso ink detail',
+    surfaceTone: '#FDF3D7',
+    accentTone: '#92400E',
     cardClass:
-      'bg-gradient-to-br from-[#FCF9F5] via-[#FFFFFF] to-[#F5EFE8] text-[#1C1613] border-[#D8CEC4]',
-    eyebrowClass: 'text-[#C2410C]',
-    subtextClass: 'text-[#574B44]',
-    dividerClass: 'border-[#EAE1D8]',
-    swatchClass: 'bg-[#FCF9F5] border-[#D8CEC4]',
+      'bg-gradient-to-br from-[#F6D365] via-[#F9E3A1] to-[#D4A037] text-[#1C1613] border-[#B47B1B]/60',
+    eyebrowClass: 'text-[#78350F]',
+    subtextClass: 'text-[#3F2A18]',
+    dividerClass: 'border-[#78350F]/20',
+    swatchClass: 'bg-gradient-to-br from-[#F6D365] to-[#D4A037] border-[#B47B1B]',
   },
 ];
 

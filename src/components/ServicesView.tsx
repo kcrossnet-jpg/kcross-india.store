@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Calendar, Check, Clock, MapPin } from 'lucide-react';
 import { SERVICES, STORES } from '../data/catalog';
 import { ServiceBooking } from '../types/store';
-import { validateBookingForm } from '../utils/storeLogic';
+import { getLocalIsoDate, validateBookingForm } from '../utils/storeLogic';
 
 interface ServicesViewProps {
   bookings: ServiceBooking[];
@@ -20,10 +20,11 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
   defaultCustomer,
   onCreateBooking,
 }) => {
+  const minBookingDate = getLocalIsoDate(0);
   const [cityFilter, setCityFilter] = useState<string>('All');
   const [selectedServiceId, setSelectedServiceId] = useState<string>(SERVICES[0].id);
   const [selectedStoreId, setSelectedStoreId] = useState<string>(STORES[0].id);
-  const [date, setDate] = useState<string>('2026-11-18');
+  const [date, setDate] = useState<string>(() => getLocalIsoDate(1));
   const [timeSlot, setTimeSlot] = useState<string>(TIME_SLOTS[0]);
   const [customerName, setCustomerName] = useState<string>(defaultCustomer?.name ?? '');
   const [email, setEmail] = useState<string>(defaultCustomer?.email ?? '');
@@ -43,15 +44,18 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validation = validateBookingForm({
-      serviceId: selectedServiceId,
-      storeId: selectedStoreId,
-      date,
-      timeSlot,
-      customerName,
-      email,
-      notes,
-    });
+    const validation = validateBookingForm(
+      {
+        serviceId: selectedServiceId,
+        storeId: selectedStoreId,
+        date,
+        timeSlot,
+        customerName,
+        email,
+        notes,
+      },
+      minBookingDate
+    );
     setErrors(validation);
     if (Object.keys(validation).length > 0) return;
 
@@ -252,6 +256,7 @@ export const ServicesView: React.FC<ServicesViewProps> = ({
                 <input
                   id="booking-date"
                   type="date"
+                  min={minBookingDate}
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"

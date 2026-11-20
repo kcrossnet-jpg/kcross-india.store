@@ -186,6 +186,14 @@ export default function App() {
           },
           onOrders: (ordList) => setCloudOrders(ordList),
           onBookings: (bkList) => setCloudBookings(bkList),
+          onError: (err) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg.includes('Quota exceeded') || msg.includes('resource-exhausted')) {
+              setAuthError('Firestore daily quota reached. Your local session continues to work.');
+            } else if (msg.includes('Missing or insufficient permissions') || msg.includes('permission-denied')) {
+              setAuthError('Cloud sync requires a verified Email ID or Mobile OTP session.');
+            }
+          },
         });
       })
       .catch((err) => {
@@ -405,29 +413,37 @@ export default function App() {
     rawPhone: string,
     recaptchaContainer: HTMLElement | null,
     countryDialCode = '+91'
-  ) => {
+  ): Promise<boolean> => {
     setAuthError(null);
     if (!auth) {
       showFirebaseEnvError();
-      return;
+      return false;
     }
     if (!recaptchaContainer) {
       setAuthError('Security check container is not ready. Please try again.');
-      return;
+      return false;
     }
     const normalizedPhone = normalizePhoneNumberWithCountry(rawPhone, countryDialCode);
     if (!normalizedPhone) {
       setAuthError('Enter a valid mobile number (e.g. +91 98765 43210).');
-      return;
+      return false;
     }
     setIsSigningIn(true);
     try {
       recaptchaContainerElRef.current = recaptchaContainer;
       clearRecaptcha(recaptchaContainer);
+      const widgetHost = document.createElement('div');
+      recaptchaContainer.appendChild(widgetHost);
       useDeviceLanguage(auth);
-      const appVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
+      const appVerifier = new RecaptchaVerifier(auth, widgetHost, {
         size: 'invisible',
+        callback: () => {
+          // reCAPTCHA solved; signInWithPhoneNumber proceeds automatically.
+        },
         'expired-callback': () => {
+          clearRecaptcha(recaptchaContainer);
+        },
+        'error-callback': () => {
           clearRecaptcha(recaptchaContainer);
         },
       });
@@ -439,21 +455,26 @@ export default function App() {
       setPendingOtpConfirmation(confirmationResult);
       setPendingPhoneLabel(normalizedPhone);
       notify(`Verification code sent to ${normalizedPhone}`);
+      return true;
     } catch (error) {
       clearRecaptcha(recaptchaContainer);
       const code = (error as { code?: string })?.code || '';
       setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+      return false;
     } finally {
       setIsSigningIn(false);
     }
   };
 
-  const handleVerifyPhoneOtp = async (otpCode: string, optionalName?: string) => {
+  const handleVerifyPhoneOtp = async (
+    otpCode: string,
+    optionalName?: string
+  ): Promise<boolean> => {
     setAuthError(null);
     const activeConfirmation = pendingOtpConfirmation ?? window.confirmationResult ?? null;
     if (!activeConfirmation) {
       setAuthError('Your verification session expired. Please request a new code.');
-      return;
+      return false;
     }
     setIsSigningIn(true);
     try {
@@ -463,17 +484,21 @@ export default function App() {
         await updateProfile(user, {
           displayName: optionalName.trim().slice(0, 120),
         }).catch(() => {});
+        await reload(user).catch(() => {});
       }
       window.confirmationResult = undefined;
       setPendingOtpConfirmation(null);
       setPendingPhoneLabel(null);
       clearRecaptcha();
-      setAuthUser(user);
+      const verifiedUser = auth?.currentUser ?? user;
+      setAuthUser(verifiedUser);
       setAuthRevision((r) => r + 1);
-      notify(`Verified & signed in with ${user.phoneNumber || 'mobile number'}`);
+      notify(`Verified & signed in with ${verifiedUser.phoneNumber || 'mobile number'}`);
+      return true;
     } catch (error) {
       const code = (error as { code?: string })?.code || '';
       setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+      return false;
     } finally {
       setIsSigningIn(false);
     }
@@ -509,10 +534,18 @@ export default function App() {
     try {
       recaptchaContainerElRef.current = recaptchaContainer;
       clearRecaptcha(recaptchaContainer);
+      const widgetHost = document.createElement('div');
+      recaptchaContainer.appendChild(widgetHost);
       useDeviceLanguage(auth);
-      const appVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
+      const appVerifier = new RecaptchaVerifier(auth, widgetHost, {
         size: 'invisible',
+        callback: () => {
+          // reCAPTCHA solved; linkWithPhoneNumber proceeds automatically.
+        },
         'expired-callback': () => {
+          clearRecaptcha(recaptchaContainer);
+        },
+        'error-callback': () => {
           clearRecaptcha(recaptchaContainer);
         },
       });
@@ -536,23 +569,31 @@ export default function App() {
     }
   };
 
-  const handleConfirmLinkPhoneOtp = async (otpCode: string) => {
+  const handleConfirmLinkPhoneOtp = async (otpCode: string): Promise<boolean> => {
     setAuthError(null);
     if (!pendingLinkOtpConfirmation) {
       setAuthError('Your verification session expired. Please request a new code.');
-      return;
+      return false;
     }
     setIsSigningIn(true);
     try {
-      await pendingLinkOtpConfirmation.confirm(otpCode.trim());
+      const cred = await pendingLinkOtpConfirmation.confirm(otpCode.trim());
+      if (auth?.currentUser) {
+        await reload(auth.currentUser).catch(() => {});
+        setAuthUser(auth.currentUser);
+      } else {
+        setAuthUser(cred.user);
+      }
       setPendingLinkOtpConfirmation(null);
       setPendingLinkPhoneLabel(null);
       clearRecaptcha();
       setAuthRevision((r) => r + 1);
       notify('Mobile number verified and linked to your account');
+      return true;
     } catch (error) {
       const code = (error as { code?: string })?.code || '';
       setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+      return false;
     } finally {
       setIsSigningIn(false);
     }
@@ -692,7 +733,7 @@ export default function App() {
   }) => {
     if (!authUser) return;
     if (!isCloudVerified) {
-      throw new Error('Verify your email ID before syncing delivery details to cloud.');
+      throw new Error('Verify your Email ID or link a Mobile OTP before syncing delivery details to cloud.');
     }
     await saveCustomerDeliveryProfile(authUser.uid, {
       displayName: data.displayName,
@@ -1009,7 +1050,7 @@ export default function App() {
 
         {view === 'offers' && (
           <OffersView
-            activeCoupon={appliedCoupon}
+            activeCoupon={totals.couponCode}
             wishlistIds={wishlistIds}
             onApplyCouponAndOpenBag={(code) => {
               setAppliedCoupon(code);

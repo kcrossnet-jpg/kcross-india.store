@@ -270,7 +270,7 @@ export const BagDrawer: React.FC<BagDrawerProps> = ({
                       surfaceTone={item.surfaceTone}
                       accentTone={item.accentTone}
                       imageUrl={
-                        PRODUCTS.find((p) => p.id === item.productId)?.imageUrl
+                        item.imageUrl ?? PRODUCTS.find((p) => p.id === item.productId)?.imageUrl
                       }
                       imageAlt={`${item.brand} ${item.name}`}
                       className="h-20 w-20 shrink-0 rounded-lg"

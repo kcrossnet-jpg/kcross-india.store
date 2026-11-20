@@ -60,6 +60,15 @@ export function formatINR(amount: number): string {
   return '₹' + Math.round(amount).toLocaleString('en-IN');
 }
 
+export function getLocalIsoDate(offsetDays = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function getDiscountPercent(price: number, mrp: number | null): number {
   if (!mrp || mrp <= price) return 0;
   return Math.round(((mrp - price) / mrp) * 100);
@@ -267,7 +276,10 @@ export function mapFirebaseAuthError(code: string, hostname = ''): string {
     case 'auth/popup-blocked':
       return 'Popup blocked by browser. Please allow popups for this site and try again.';
     case 'auth/unauthorized-domain':
+    case 'auth/app-not-authorized':
       return `Domain "${hostname}" is not in Firebase Console -> Authentication -> Settings -> Authorized domains.`;
+    case 'auth/web-storage-unsupported':
+      return 'Browser storage or third-party cookies are blocked. Enable cookies/storage and try again.';
     case 'auth/operation-not-allowed':
       return 'This sign-in method is not enabled yet. Enable Phone and Email/Password in Firebase Console -> Authentication -> Sign-in method.';
     case 'auth/billing-not-enabled':
@@ -328,7 +340,7 @@ export function validateCustomerProfileForm(
   if (email.length > 0 && (!EMAIL_RE.test(email) || email.length > 160)) {
     errors.email = 'Enter a valid email address (or leave blank).';
   }
-  if (phone.length > 0 && !normalizeIndianPhoneNumber(phone)) {
+  if (phone.length > 0 && !normalizePhoneNumberWithCountry(phone, '+91')) {
     errors.phoneNumber = 'Enter a valid mobile number (or leave blank).';
   }
   if (addr.length > 0 && (addr.length < 5 || addr.length > 300)) {
@@ -385,15 +397,23 @@ export function validateCheckoutForm(
 }
 
 export function validateBookingForm(
-  form: BookingFormInput & { notes?: string }
+  form: BookingFormInput & { notes?: string },
+  minDate = getLocalIsoDate(0)
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   const name = form.customerName.trim();
   const email = form.email.trim();
+  const trimmedDate = form.date.trim();
 
   if (!form.serviceId) errors.serviceId = 'Select a studio service.';
   if (!form.storeId) errors.storeId = 'Select a flagship store.';
-  if (!form.date) errors.date = 'Choose a preferred date.';
+  if (!trimmedDate) {
+    errors.date = 'Choose a preferred date.';
+  } else if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmedDate)) {
+    errors.date = 'Enter a valid booking date.';
+  } else if (trimmedDate < minDate) {
+    errors.date = 'Please choose today or an upcoming date.';
+  }
   if (!form.timeSlot) errors.timeSlot = 'Choose a time slot.';
   if (name.length < 2 || name.length > 120) {
     errors.customerName = 'Enter your full name (2 to 120 characters).';

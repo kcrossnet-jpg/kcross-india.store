@@ -113,7 +113,9 @@ export async function saveCustomerDeliveryProfile(
   if (!db) return;
   const userPath = `users/${uid}`;
   const privatePath = `users/${uid}/private/profile`;
-  const cleanName = payload.displayName.trim().slice(0, 120);
+  const userRef = doc(db, 'users', uid);
+  const privateRef = doc(db, 'users', uid, 'private', 'profile');
+  const cleanName = (payload.displayName.trim() || 'kcross india store Customer').slice(0, 120);
   const cleanEmail = payload.email.trim().slice(0, 160);
   const cleanPhone = (payload.phoneNumber || '').trim().slice(0, 24);
   const cleanAddress = payload.defaultAddress.trim().slice(0, 300);
@@ -123,26 +125,50 @@ export async function saveCustomerDeliveryProfile(
   const cleanWishlist = sanitizeWishlist(payload.wishlistIds);
 
   try {
-    await updateDoc(doc(db, 'users', uid), {
-      displayName: cleanName,
-      updatedAt: serverTimestamp(),
-    });
+    const existingUser = await getDoc(userRef);
+    if (existingUser.exists()) {
+      await updateDoc(userRef, {
+        displayName: cleanName,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await setDoc(userRef, {
+        uid,
+        displayName: cleanName,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, userPath);
+    handleFirestoreError(error, OperationType.WRITE, userPath);
   }
 
   try {
-    await updateDoc(doc(db, 'users', uid, 'private', 'profile'), {
-      email: cleanEmail,
-      phoneNumber: cleanPhone,
-      defaultAddress: cleanAddress,
-      defaultCity: cleanCity,
-      defaultPinCode: cleanPin,
-      wishlistIds: cleanWishlist,
-      updatedAt: serverTimestamp(),
-    });
+    const existingPrivate = await getDoc(privateRef);
+    if (existingPrivate.exists()) {
+      await updateDoc(privateRef, {
+        email: cleanEmail,
+        phoneNumber: cleanPhone,
+        defaultAddress: cleanAddress,
+        defaultCity: cleanCity,
+        defaultPinCode: cleanPin,
+        wishlistIds: cleanWishlist,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await setDoc(privateRef, {
+        uid,
+        email: cleanEmail,
+        ...(cleanPhone ? { phoneNumber: cleanPhone } : {}),
+        defaultAddress: cleanAddress,
+        defaultCity: cleanCity,
+        defaultPinCode: cleanPin,
+        wishlistIds: cleanWishlist,
+        updatedAt: serverTimestamp(),
+      });
+    }
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, privatePath);
+    handleFirestoreError(error, OperationType.WRITE, privatePath);
   }
 }
 
@@ -151,14 +177,40 @@ export async function syncWishlistToCloud(
   wishlistIds: string[]
 ): Promise<void> {
   if (!db) return;
+  const userPath = `users/${uid}`;
   const privatePath = `users/${uid}/private/profile`;
+  const userRef = doc(db, 'users', uid);
+  const privateRef = doc(db, 'users', uid, 'private', 'profile');
+  const cleanWishlist = sanitizeWishlist(wishlistIds);
   try {
-    await updateDoc(doc(db, 'users', uid, 'private', 'profile'), {
-      wishlistIds: sanitizeWishlist(wishlistIds),
-      updatedAt: serverTimestamp(),
-    });
+    const existingPrivate = await getDoc(privateRef);
+    if (existingPrivate.exists()) {
+      await updateDoc(privateRef, {
+        wishlistIds: cleanWishlist,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      const existingUser = await getDoc(userRef);
+      if (!existingUser.exists()) {
+        await setDoc(userRef, {
+          uid,
+          displayName: 'kcross india store Customer',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+      await setDoc(privateRef, {
+        uid,
+        email: '',
+        defaultAddress: '',
+        defaultCity: '',
+        defaultPinCode: '',
+        wishlistIds: cleanWishlist,
+        updatedAt: serverTimestamp(),
+      });
+    }
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, privatePath);
+    handleFirestoreError(error, OperationType.WRITE, `${userPath} -> ${privatePath}`);
   }
 }
 
@@ -233,6 +285,7 @@ export function subscribeCustomerData(
     onProfile: (profile: CustomerProfile) => void;
     onOrders: (orders: OrderRecord[]) => void;
     onBookings: (bookings: ServiceBooking[]) => void;
+    onError?: (error: unknown, path: string) => void;
   }
 ): () => void {
   if (!db) return () => {};
@@ -266,6 +319,11 @@ export function subscribeCustomerData(
     });
   };
 
+  const reportSnapshotError = (path: string, error: unknown) => {
+    console.error(`Firestore listener error on ${path}:`, error);
+    callbacks.onError?.(error, path);
+  };
+
   const userPath = `users/${uid}`;
   const unsubUser = onSnapshot(
     doc(db, 'users', uid),
@@ -277,7 +335,7 @@ export function subscribeCustomerData(
         emitProfile();
       }
     },
-    (error) => handleFirestoreError(error, OperationType.GET, userPath)
+    (error) => reportSnapshotError(userPath, error)
   );
 
   const privatePath = `users/${uid}/private/profile`;
@@ -299,7 +357,7 @@ export function subscribeCustomerData(
         emitProfile();
       }
     },
-    (error) => handleFirestoreError(error, OperationType.GET, privatePath)
+    (error) => reportSnapshotError(privatePath, error)
   );
 
   const ordersPath = `users/${uid}/orders`;
@@ -352,7 +410,7 @@ export function subscribeCustomerData(
       });
       callbacks.onOrders(list);
     },
-    (error) => handleFirestoreError(error, OperationType.LIST, ordersPath)
+    (error) => reportSnapshotError(ordersPath, error)
   );
 
   const bookingsPath = `users/${uid}/bookings`;
@@ -387,7 +445,7 @@ export function subscribeCustomerData(
       });
       callbacks.onBookings(list);
     },
-    (error) => handleFirestoreError(error, OperationType.LIST, bookingsPath)
+    (error) => reportSnapshotError(bookingsPath, error)
   );
 
   return () => {
