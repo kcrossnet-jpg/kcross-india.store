@@ -40,11 +40,17 @@ export async function ensureCustomerDocs(
   const userRef = doc(db, 'users', uid);
   const privateRef = doc(db, 'users', uid, 'private', 'profile');
 
-  const safeDisplayName = (user.displayName || user.email?.split('@')[0] || 'kcross india store Customer')
+  const safeDisplayName = (
+    user.displayName ||
+    user.email?.split('@')[0] ||
+    user.phoneNumber ||
+    'kcross india store Customer'
+  )
     .trim()
     .slice(0, 120);
   const safePhoto = (user.photoURL || '').trim().slice(0, 500);
-  const safeEmail = (user.email || 'customer@kcrossindia.store').trim().slice(0, 160);
+  const safeEmail = (user.email || '').trim().slice(0, 160);
+  const safePhone = (user.phoneNumber || '').trim().slice(0, 24);
 
   let userSnap;
   try {
@@ -79,6 +85,7 @@ export async function ensureCustomerDocs(
       await setDoc(privateRef, {
         uid,
         email: safeEmail,
+        ...(safePhone ? { phoneNumber: safePhone } : {}),
         defaultAddress: '',
         defaultCity: '',
         defaultPinCode: '',
@@ -96,6 +103,7 @@ export async function saveCustomerDeliveryProfile(
   payload: {
     displayName: string;
     email: string;
+    phoneNumber?: string;
     defaultAddress: string;
     defaultCity: string;
     defaultPinCode: string;
@@ -107,6 +115,7 @@ export async function saveCustomerDeliveryProfile(
   const privatePath = `users/${uid}/private/profile`;
   const cleanName = payload.displayName.trim().slice(0, 120);
   const cleanEmail = payload.email.trim().slice(0, 160);
+  const cleanPhone = (payload.phoneNumber || '').trim().slice(0, 24);
   const cleanAddress = payload.defaultAddress.trim().slice(0, 300);
   const cleanCity = payload.defaultCity.trim().slice(0, 80);
   const rawPin = payload.defaultPinCode.trim();
@@ -125,6 +134,7 @@ export async function saveCustomerDeliveryProfile(
   try {
     await updateDoc(doc(db, 'users', uid, 'private', 'profile'), {
       email: cleanEmail,
+      phoneNumber: cleanPhone,
       defaultAddress: cleanAddress,
       defaultCity: cleanCity,
       defaultPinCode: cleanPin,
@@ -227,10 +237,15 @@ export function subscribeCustomerData(
 ): () => void {
   if (!db) return () => {};
   const uid = user.uid;
-  let accountName = user.displayName || user.email?.split('@')[0] || 'kcross india store Customer';
+  let accountName =
+    user.displayName ||
+    user.email?.split('@')[0] ||
+    user.phoneNumber ||
+    'kcross india store Customer';
   let accountPhoto = user.photoURL || undefined;
   let privateData: Partial<CustomerProfile> = {
     email: user.email || '',
+    phoneNumber: user.phoneNumber || '',
     defaultAddress: '',
     defaultCity: '',
     defaultPinCode: '',
@@ -242,6 +257,7 @@ export function subscribeCustomerData(
       uid,
       displayName: accountName,
       email: privateData.email || user.email || '',
+      phoneNumber: privateData.phoneNumber || user.phoneNumber || '',
       photoURL: accountPhoto,
       defaultAddress: privateData.defaultAddress || '',
       defaultCity: privateData.defaultCity || '',
@@ -272,6 +288,7 @@ export function subscribeCustomerData(
         const d = snap.data();
         privateData = {
           email: typeof d.email === 'string' ? d.email : user.email || '',
+          phoneNumber: typeof d.phoneNumber === 'string' ? d.phoneNumber : user.phoneNumber || '',
           defaultAddress: typeof d.defaultAddress === 'string' ? d.defaultAddress : '',
           defaultCity: typeof d.defaultCity === 'string' ? d.defaultCity : '',
           defaultPinCode: typeof d.defaultPinCode === 'string' ? d.defaultPinCode : '',

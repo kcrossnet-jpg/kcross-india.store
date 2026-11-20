@@ -188,6 +188,8 @@ const PIN_RE = /^[1-9][0-9]{5}$/;
 
 export interface CustomerProfileFormInput {
   displayName: string;
+  email?: string;
+  phoneNumber?: string;
   defaultAddress: string;
   defaultCity: string;
   defaultPinCode: string;
@@ -197,17 +199,107 @@ export function validateEmail(email: string): boolean {
   return EMAIL_RE.test(email.trim());
 }
 
+export function normalizeIndianPhoneNumber(raw: string): string {
+  const cleaned = raw.replace(/[\s()-]/g, '').trim();
+  if (!cleaned) return '';
+  if (/^[6-9]\d{9}$/.test(cleaned)) return `+91${cleaned}`;
+  if (/^0[6-9]\d{9}$/.test(cleaned)) return `+91${cleaned.slice(1)}`;
+  if (/^91[6-9]\d{9}$/.test(cleaned)) return `+${cleaned}`;
+  if (/^\+[1-9]\d{7,14}$/.test(cleaned)) return cleaned;
+  return '';
+}
+
+export function validatePhoneNumberInput(raw: string): string | null {
+  if (!raw.trim()) {
+    return 'Enter your 10-digit mobile number.';
+  }
+  const normalized = normalizeIndianPhoneNumber(raw);
+  if (!normalized) {
+    return 'Enter a valid 10-digit Indian mobile number (e.g. 9876543210) or include country code (+91...).';
+  }
+  return null;
+}
+
+export function validateEmailAuthForm(
+  mode: 'signin' | 'register',
+  input: { fullName?: string; email: string; password: string }
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const email = input.email.trim();
+  const password = input.password;
+
+  if (mode === 'register') {
+    const name = (input.fullName ?? '').trim();
+    if (name.length < 2 || name.length > 120) {
+      errors.fullName = 'Enter your full name (2 to 120 characters).';
+    }
+  }
+  if (!EMAIL_RE.test(email) || email.length > 160) {
+    errors.email = 'Enter a valid email address.';
+  }
+  if (password.length < 6) {
+    errors.password = 'Password must be at least 6 characters.';
+  } else if (password.length > 128) {
+    errors.password = 'Keep password under 128 characters.';
+  }
+  return errors;
+}
+
+export function mapFirebaseAuthError(code: string, hostname = ''): string {
+  switch (code) {
+    case 'auth/popup-closed-by-user':
+    case 'auth/cancelled-popup-request':
+      return 'Sign-in popup was closed before completing login.';
+    case 'auth/popup-blocked':
+      return 'Popup blocked by browser. Please allow popups for this site and try again.';
+    case 'auth/unauthorized-domain':
+      return `Domain "${hostname}" is not in Firebase Console -> Authentication -> Settings -> Authorized domains.`;
+    case 'auth/operation-not-allowed':
+      return 'This sign-in method is not enabled yet. Enable Phone and Email/Password in Firebase Console -> Authentication -> Sign-in method.';
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return 'Incorrect email address or password. Please check and try again.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists. Switch to Sign In with Email ID.';
+    case 'auth/weak-password':
+      return 'Please choose a stronger password (at least 6 characters).';
+    case 'auth/invalid-phone-number':
+      return 'Enter a valid mobile number with country code (e.g. +91 98765 43210).';
+    case 'auth/invalid-verification-code':
+      return 'The 6-digit OTP entered is incorrect. Please check your SMS and try again.';
+    case 'auth/code-expired':
+      return 'This OTP has expired. Click Resend OTP to request a new code.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts detected. Please wait a few minutes before trying again.';
+    case 'auth/captcha-check-failed':
+      return 'reCAPTCHA verification failed. Please reload and try again.';
+    case 'auth/quota-exceeded':
+      return 'SMS OTP daily quota reached. Try Email ID or Google Sign-In.';
+    default:
+      return 'Unable to complete sign-in right now. Please try again.';
+  }
+}
+
 export function validateCustomerProfileForm(
   form: CustomerProfileFormInput
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   const name = form.displayName.trim();
+  const email = (form.email ?? '').trim();
+  const phone = (form.phoneNumber ?? '').trim();
   const addr = form.defaultAddress.trim();
   const city = form.defaultCity.trim();
   const pin = form.defaultPinCode.trim();
 
   if (name.length < 2 || name.length > 120) {
     errors.displayName = 'Enter a display name between 2 and 120 characters.';
+  }
+  if (email.length > 0 && (!EMAIL_RE.test(email) || email.length > 160)) {
+    errors.email = 'Enter a valid email address (or leave blank).';
+  }
+  if (phone.length > 0 && !normalizeIndianPhoneNumber(phone)) {
+    errors.phoneNumber = 'Enter a valid mobile number (or leave blank).';
   }
   if (addr.length > 0 && (addr.length < 5 || addr.length > 300)) {
     errors.defaultAddress = 'Street address must be 5 to 300 characters (or leave blank).';

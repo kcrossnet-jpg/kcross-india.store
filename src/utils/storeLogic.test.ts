@@ -228,3 +228,38 @@ test('resolveFirebaseConfig rejects malformed or service-account env values and 
   assert.equal(validHostedOnly.apiKey, validLocal.apiKey);
   assert.equal(validHostedOnly.firestoreDatabaseId, validLocal.firestoreDatabaseId);
 });
+
+test('phone normalization, email auth validation, and auth error mapping work accurately', async () => {
+  const {
+    normalizeIndianPhoneNumber,
+    validatePhoneNumberInput,
+    validateEmailAuthForm,
+    mapFirebaseAuthError,
+  } = await import('./storeLogic');
+
+  assert.equal(normalizeIndianPhoneNumber('98765 43210'), '+919876543210');
+  assert.equal(normalizeIndianPhoneNumber('09876543210'), '+919876543210');
+  assert.equal(normalizeIndianPhoneNumber('919876543210'), '+919876543210');
+  assert.equal(normalizeIndianPhoneNumber('+44 7911 123456'), '+447911123456');
+  assert.equal(normalizeIndianPhoneNumber('12345'), '');
+
+  assert.equal(validatePhoneNumberInput('9876543210'), null);
+  assert.ok(validatePhoneNumberInput(''));
+  assert.ok(validatePhoneNumberInput('12345'));
+
+  const badReg = validateEmailAuthForm('register', {
+    fullName: 'A',
+    email: 'bad',
+    password: '123',
+  });
+  assert.ok(badReg.fullName && badReg.email && badReg.password);
+
+  const goodSignIn = validateEmailAuthForm('signin', {
+    email: 'ananya@example.in',
+    password: 'password123',
+  });
+  assert.deepEqual(goodSignIn, {});
+
+  assert.ok(mapFirebaseAuthError('auth/operation-not-allowed').includes('Firebase Console'));
+  assert.ok(mapFirebaseAuthError('auth/invalid-verification-code').includes('OTP'));
+});

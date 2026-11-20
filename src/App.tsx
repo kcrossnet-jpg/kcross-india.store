@@ -1,5 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ConfirmationResult,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  RecaptchaVerifier,
+  reload,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPhoneNumber,
+  signInWithPopup,
+  signOut,
+  updateProfile,
+  User,
+} from 'firebase/auth';
 import { Heart, Menu, Search, ShoppingBag, User as UserIcon, X } from 'lucide-react';
 import { CATEGORIES, PRODUCTS, SEEDED_ORDERS } from './data/catalog';
 import { auth, googleProvider, missingFirebaseEnvVars } from './firebase';
@@ -12,7 +26,11 @@ import {
   Product,
   ServiceBooking,
 } from './types/store';
-import { calculateCartTotals } from './utils/storeLogic';
+import {
+  calculateCartTotals,
+  mapFirebaseAuthError,
+  normalizeIndianPhoneNumber,
+} from './utils/storeLogic';
 import {
   ensureCustomerDocs,
   saveBookingToCloud,
@@ -83,11 +101,28 @@ export default function App() {
 
   const [authReady, setAuthReady] = useState(false);
   const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authRevision, setAuthRevision] = useState(0);
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
   const [cloudOrders, setCloudOrders] = useState<OrderRecord[]>([]);
   const [cloudBookings, setCloudBookings] = useState<ServiceBooking[]>([]);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [pendingOtpConfirmation, setPendingOtpConfirmation] = useState<ConfirmationResult | null>(
+    null
+  );
+  const [pendingPhoneLabel, setPendingPhoneLabel] = useState<string | null>(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+
+  const clearRecaptcha = () => {
+    if (recaptchaVerifierRef.current) {
+      try {
+        recaptchaVerifierRef.current.clear();
+      } catch {
+        // Ignore already-cleared widget errors
+      }
+      recaptchaVerifierRef.current = null;
+    }
+  };
 
   useEffect(() => {
     if (!auth) {
@@ -103,11 +138,19 @@ export default function App() {
         setCloudBookings([]);
       }
     });
-    return () => unsub();
+    return () => {
+      unsub();
+      clearRecaptcha();
+    };
   }, []);
 
+  const currentSessionUser = auth?.currentUser ?? authUser;
+  const isCloudVerified = Boolean(
+    currentSessionUser && (currentSessionUser.emailVerified || currentSessionUser.phoneNumber)
+  );
+
   useEffect(() => {
-    if (!authReady || !authUser) return;
+    if (!authReady || !authUser || !isCloudVerified) return;
     let active = true;
     let unsubData: (() => void) | null = null;
 
@@ -130,7 +173,7 @@ export default function App() {
         if (msg.includes('Quota exceeded')) {
           setAuthError('Firestore daily quota reached. Your local session continues to work.');
         } else if (msg.includes('Missing or insufficient permissions')) {
-          setAuthError('Cloud sync requires a verified Google email on your account.');
+          setAuthError('Cloud sync requires a verified Email ID or Mobile OTP session.');
         }
       });
 
@@ -138,7 +181,7 @@ export default function App() {
       active = false;
       if (unsubData) unsubData();
     };
-  }, [authReady, authUser]);
+  }, [authReady, authUser, isCloudVerified, authRevision]);
 
   useEffect(() => {
     try {
@@ -278,7 +321,7 @@ export default function App() {
     const next = exists ? wishlistIds.filter((id) => id !== productId) : [...wishlistIds, productId];
     setWishlistIds(next);
     notify(exists ? 'Removed from wishlist' : 'Saved to wishlist');
-    if (authReady && authUser) {
+    if (authReady && authUser && isCloudVerified) {
       void syncWishlistToCloud(authUser.uid, next).catch(() => {});
     }
   };
@@ -288,7 +331,7 @@ export default function App() {
     setCart([]);
     setAppliedCoupon(null);
     notify(`Order ${order.orderNumber} confirmed`);
-    if (authReady && authUser) {
+    if (authReady && authUser && isCloudVerified) {
       void saveOrderToCloud(authUser.uid, order).catch((err) => {
         if (err instanceof Error && err.message.includes('Quota exceeded')) {
           notify('Saved locally. Daily cloud database quota reached.');
@@ -300,7 +343,7 @@ export default function App() {
   const handleCreateBooking = (booking: ServiceBooking) => {
     setBookings((prev) => [booking, ...prev]);
     notify(`Appointment ${booking.id} confirmed`);
-    if (authReady && authUser) {
+    if (authReady && authUser && isCloudVerified) {
       void saveBookingToCloud(authUser.uid, booking).catch((err) => {
         if (err instanceof Error && err.message.includes('Quota exceeded')) {
           notify('Saved locally. Daily cloud database quota reached.');
@@ -309,33 +352,199 @@ export default function App() {
     }
   };
 
+  const showFirebaseEnvError = () => {
+    const missingText =
+      missingFirebaseEnvVars.length > 0 ? missingFirebaseEnvVars.join(', ') : 'VITE_FIREBASE_*';
+    setAuthError(
+      `Cloud sign-in requires Firebase build environment variables (${missingText}) to be configured in your hosting dashboard (such as Cloudflare Pages Settings -> Environment variables) and redeployed.`
+    );
+  };
+
   const handleGoogleSignIn = async () => {
     setAuthError(null);
     if (!auth || !googleProvider) {
-      const missingText =
-        missingFirebaseEnvVars.length > 0 ? missingFirebaseEnvVars.join(', ') : 'VITE_FIREBASE_*';
-      setAuthError(
-        `Cloud sign-in requires Firebase build environment variables (${missingText}) to be configured in your hosting dashboard (such as Cloudflare Pages Settings -> Environment variables) and redeployed.`
-      );
+      showFirebaseEnvError();
       return;
     }
     setIsSigningIn(true);
     try {
       const cred = await signInWithPopup(auth, googleProvider);
+      setPendingOtpConfirmation(null);
+      setPendingPhoneLabel(null);
+      clearRecaptcha();
       notify(`Signed in as ${cred.user.displayName || cred.user.email}`);
     } catch (error) {
       const code = (error as { code?: string })?.code || '';
-      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        setAuthError('Sign-in popup was closed before completing login.');
-      } else if (code === 'auth/popup-blocked') {
-        setAuthError('Popup blocked by browser. Please allow popups for this site and try again.');
-      } else if (code === 'auth/unauthorized-domain') {
-        setAuthError(
-          `Domain "${window.location.hostname}" is not in Firebase Console -> Authentication -> Settings -> Authorized domains.`
-        );
-      } else {
-        setAuthError('Unable to complete Google sign-in right now. Please try again.');
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleSendPhoneOtp = async (rawPhone: string, recaptchaContainer: HTMLElement | null) => {
+    setAuthError(null);
+    if (!auth) {
+      showFirebaseEnvError();
+      return;
+    }
+    if (!recaptchaContainer) {
+      setAuthError('Security check container is not ready. Please try again.');
+      return;
+    }
+    const normalizedPhone = normalizeIndianPhoneNumber(rawPhone);
+    if (!normalizedPhone) {
+      setAuthError('Enter a valid 10-digit Indian mobile number or include country code (+91...).');
+      return;
+    }
+    setIsSigningIn(true);
+    try {
+      clearRecaptcha();
+      const verifier = new RecaptchaVerifier(auth, recaptchaContainer, {
+        size: 'invisible',
+      });
+      recaptchaVerifierRef.current = verifier;
+      const confirmation = await signInWithPhoneNumber(auth, normalizedPhone, verifier);
+      setPendingOtpConfirmation(confirmation);
+      setPendingPhoneLabel(normalizedPhone);
+      notify(`OTP sent to ${normalizedPhone}`);
+    } catch (error) {
+      clearRecaptcha();
+      const code = (error as { code?: string })?.code || '';
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async (otpCode: string, optionalName?: string) => {
+    setAuthError(null);
+    if (!pendingOtpConfirmation) {
+      setAuthError('Your OTP session expired. Please request a new OTP.');
+      return;
+    }
+    setIsSigningIn(true);
+    try {
+      const cred = await pendingOtpConfirmation.confirm(otpCode.trim());
+      if (optionalName && optionalName.trim()) {
+        await updateProfile(cred.user, {
+          displayName: optionalName.trim().slice(0, 120),
+        });
       }
+      setPendingOtpConfirmation(null);
+      setPendingPhoneLabel(null);
+      clearRecaptcha();
+      setAuthRevision((r) => r + 1);
+      notify(`Signed in with ${cred.user.phoneNumber || 'mobile number'}`);
+    } catch (error) {
+      const code = (error as { code?: string })?.code || '';
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleResetPhoneOtp = () => {
+    setPendingOtpConfirmation(null);
+    setPendingPhoneLabel(null);
+    setAuthError(null);
+    clearRecaptcha();
+  };
+
+  const handleEmailSignIn = async (email: string, password: string) => {
+    setAuthError(null);
+    if (!auth) {
+      showFirebaseEnvError();
+      return;
+    }
+    setIsSigningIn(true);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      setPendingOtpConfirmation(null);
+      setPendingPhoneLabel(null);
+      clearRecaptcha();
+      notify(`Signed in as ${cred.user.displayName || cred.user.email}`);
+    } catch (error) {
+      const code = (error as { code?: string })?.code || '';
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleEmailRegister = async (fullName: string, email: string, password: string) => {
+    setAuthError(null);
+    if (!auth) {
+      showFirebaseEnvError();
+      return;
+    }
+    setIsSigningIn(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await updateProfile(cred.user, {
+        displayName: fullName.trim().slice(0, 120),
+      });
+      await sendEmailVerification(cred.user).catch(() => {});
+      setPendingOtpConfirmation(null);
+      setPendingPhoneLabel(null);
+      clearRecaptcha();
+      setAuthRevision((r) => r + 1);
+      notify(`Account created! Verify ${email.trim()} via the link sent to your inbox.`);
+    } catch (error) {
+      const code = (error as { code?: string })?.code || '';
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleSendPasswordReset = async (email: string): Promise<boolean> => {
+    setAuthError(null);
+    if (!auth) {
+      showFirebaseEnvError();
+      return false;
+    }
+    setIsSigningIn(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      notify(`Password reset link sent to ${email.trim()}`);
+      return true;
+    } catch (error) {
+      const code = (error as { code?: string })?.code || '';
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+      return false;
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!auth?.currentUser || auth.currentUser.emailVerified) return;
+    setAuthError(null);
+    setIsSigningIn(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      notify(`Verification link sent to ${auth.currentUser.email}`);
+    } catch (error) {
+      const code = (error as { code?: string })?.code || '';
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleRefreshSession = async () => {
+    if (!auth?.currentUser) return;
+    setIsSigningIn(true);
+    try {
+      await reload(auth.currentUser);
+      setAuthRevision((r) => r + 1);
+      if (auth.currentUser.emailVerified) {
+        notify('Email verified! Cloud profile & wishlist sync enabled.');
+      } else {
+        notify('Still awaiting email verification. Check your inbox or spam folder.');
+      }
+    } catch {
+      notify('Unable to refresh session status right now.');
     } finally {
       setIsSigningIn(false);
     }
@@ -345,6 +554,10 @@ export default function App() {
     if (!auth) return;
     try {
       await signOut(auth);
+      setPendingOtpConfirmation(null);
+      setPendingPhoneLabel(null);
+      clearRecaptcha();
+      setAuthError(null);
       notify('Signed out of your customer account');
     } catch {
       notify('Unable to sign out right now');
@@ -353,14 +566,20 @@ export default function App() {
 
   const handleSaveProfile = async (data: {
     displayName: string;
+    email?: string;
+    phoneNumber?: string;
     defaultAddress: string;
     defaultCity: string;
     defaultPinCode: string;
   }) => {
     if (!authUser) return;
+    if (!isCloudVerified) {
+      throw new Error('Verify your email ID before syncing delivery details to cloud.');
+    }
     await saveCustomerDeliveryProfile(authUser.uid, {
       displayName: data.displayName,
-      email: customerProfile?.email || authUser.email || 'customer@kcrossindia.store',
+      email: data.email ?? customerProfile?.email ?? authUser.email ?? '',
+      phoneNumber: data.phoneNumber ?? customerProfile?.phoneNumber ?? authUser.phoneNumber ?? '',
       defaultAddress: data.defaultAddress,
       defaultCity: data.defaultCity,
       defaultPinCode: data.defaultPinCode,
@@ -399,7 +618,15 @@ export default function App() {
   }, [authUser, customerProfile]);
 
   const customerLabel = authUser
-    ? (customerProfile?.displayName || authUser.displayName || 'Account').split(' ')[0].slice(0, 12)
+    ? (
+        customerProfile?.displayName ||
+        authUser.displayName ||
+        authUser.email?.split('@')[0] ||
+        authUser.phoneNumber ||
+        'Account'
+      )
+        .split(' ')[0]
+        .slice(0, 12)
     : 'Sign In';
 
   const handleHeaderSearchSubmit = (e: React.FormEvent) => {
@@ -696,13 +923,24 @@ export default function App() {
           <CustomerAuthView
             authReady={authReady}
             authUser={authUser}
+            isCloudVerified={isCloudVerified}
             profile={customerProfile}
             orders={mergedOrders}
             bookings={mergedBookings}
             wishlistCount={wishlistIds.length}
             authError={authError}
             isSigningIn={isSigningIn}
+            pendingPhoneLabel={pendingPhoneLabel}
             onSignInWithGoogle={handleGoogleSignIn}
+            onSendPhoneOtp={handleSendPhoneOtp}
+            onVerifyPhoneOtp={handleVerifyPhoneOtp}
+            onResetPhoneOtp={handleResetPhoneOtp}
+            onEmailSignIn={handleEmailSignIn}
+            onEmailRegister={handleEmailRegister}
+            onSendPasswordReset={handleSendPasswordReset}
+            onResendVerification={handleResendVerification}
+            onRefreshSession={handleRefreshSession}
+            onClearAuthError={() => setAuthError(null)}
             onSignOut={handleSignOut}
             onSaveProfile={handleSaveProfile}
             onNavigateView={navigate}

@@ -24,7 +24,12 @@ service cloud.firestore {
     }
 
     function isVerifiedOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId && request.auth.token.email_verified == true;
+      return isSignedIn() && request.auth.uid == userId && (
+        request.auth.token.email_verified == true ||
+        ('phone_number' in request.auth.token &&
+          request.auth.token.phone_number is string &&
+          request.auth.token.phone_number.size() >= 8)
+      );
     }
 
     function isOwner(userId) {
@@ -43,9 +48,11 @@ service cloud.firestore {
 
     function isValidPrivateProfile(data, userId) {
       return data.keys().hasAll(['uid', 'email', 'defaultAddress', 'defaultCity', 'defaultPinCode', 'wishlistIds', 'updatedAt']) &&
-        data.keys().hasOnly(['uid', 'email', 'defaultAddress', 'defaultCity', 'defaultPinCode', 'wishlistIds', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'phoneNumber', 'defaultAddress', 'defaultCity', 'defaultPinCode', 'wishlistIds', 'updatedAt']) &&
         data.uid is string && data.uid == userId && data.uid.size() >= 1 && data.uid.size() <= 128 &&
-        data.email is string && data.email.size() >= 3 && data.email.size() <= 160 &&
+        data.email is string && data.email.size() <= 160 &&
+        (data.email.size() == 0 || data.email.size() >= 3) &&
+        (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 24)) &&
         data.defaultAddress is string && data.defaultAddress.size() <= 300 &&
         data.defaultCity is string && data.defaultCity.size() <= 80 &&
         data.defaultPinCode is string && data.defaultPinCode.size() <= 6 &&
@@ -141,7 +148,7 @@ service cloud.firestore {
           isValidPrivateProfile(incoming(), userId) &&
           incoming().uid == existing().uid &&
           incoming().updatedAt == request.time &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['email', 'defaultAddress', 'defaultCity', 'defaultPinCode', 'wishlistIds', 'updatedAt']) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['email', 'phoneNumber', 'defaultAddress', 'defaultCity', 'defaultPinCode', 'wishlistIds', 'updatedAt']) &&
           exists(/databases/$(database)/documents/users/$(userId));
         allow delete: if false;
       }

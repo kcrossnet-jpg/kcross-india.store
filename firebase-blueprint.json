@@ -51,8 +51,13 @@
         "email": {
           "type": "string",
           "format": "email",
-          "description": "Customer email address.",
+          "description": "Customer email address or empty string for mobile-only accounts.",
           "maxLength": 160
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Optional verified or contact mobile number.",
+          "maxLength": 24
         },
         "defaultAddress": {
           "type": "string",

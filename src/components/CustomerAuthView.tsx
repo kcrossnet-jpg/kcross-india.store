@@ -1,13 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { User } from 'firebase/auth';
 import {
+  AlertCircle,
   ArrowRight,
   Calendar,
   CheckCircle2,
+  Eye,
+  EyeOff,
   Heart,
   LogOut,
+  Mail,
   MapPin,
   Package,
+  Phone,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
@@ -17,22 +23,41 @@ import {
   OrderRecord,
   ServiceBooking,
 } from '../types/store';
-import { formatINR, validateCustomerProfileForm } from '../utils/storeLogic';
+import {
+  formatINR,
+  validateCustomerProfileForm,
+  validateEmail,
+  validateEmailAuthForm,
+  validatePhoneNumberInput,
+} from '../utils/storeLogic';
 import { PWAInstallButton } from './MobileAppInstall';
 
 interface CustomerAuthViewProps {
   authReady: boolean;
   authUser: User | null;
+  isCloudVerified: boolean;
   profile: CustomerProfile | null;
   orders: OrderRecord[];
   bookings: ServiceBooking[];
   wishlistCount: number;
   authError: string | null;
   isSigningIn: boolean;
+  pendingPhoneLabel: string | null;
   onSignInWithGoogle: () => void;
+  onSendPhoneOtp: (rawPhone: string, recaptchaContainer: HTMLElement | null) => Promise<void>;
+  onVerifyPhoneOtp: (otpCode: string, optionalName?: string) => Promise<void>;
+  onResetPhoneOtp: () => void;
+  onEmailSignIn: (email: string, password: string) => Promise<void>;
+  onEmailRegister: (fullName: string, email: string, password: string) => Promise<void>;
+  onSendPasswordReset: (email: string) => Promise<boolean>;
+  onResendVerification: () => Promise<void>;
+  onRefreshSession: () => Promise<void>;
+  onClearAuthError: () => void;
   onSignOut: () => void;
   onSaveProfile: (data: {
     displayName: string;
+    email?: string;
+    phoneNumber?: string;
     defaultAddress: string;
     defaultCity: string;
     defaultPinCode: string;
@@ -44,19 +69,52 @@ interface CustomerAuthViewProps {
 export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
   authReady,
   authUser,
+  isCloudVerified,
   profile,
   orders,
   bookings,
   wishlistCount,
   authError,
   isSigningIn,
+  pendingPhoneLabel,
   onSignInWithGoogle,
+  onSendPhoneOtp,
+  onVerifyPhoneOtp,
+  onResetPhoneOtp,
+  onEmailSignIn,
+  onEmailRegister,
+  onSendPasswordReset,
+  onResendVerification,
+  onRefreshSession,
+  onClearAuthError,
   onSignOut,
   onSaveProfile,
   onNavigateView,
   onTrackOrder,
 }) => {
+  // Unauthenticated sign-in / registration UI state
+  const [authMethod, setAuthMethod] = useState<'mobile' | 'email'>('mobile');
+  const [emailMode, setEmailMode] = useState<'signin' | 'register'>('signin');
+
+  // Mobile OTP state
+  const [mobileInput, setMobileInput] = useState('');
+  const [otpInput, setOtpInput] = useState('');
+  const [otpNameInput, setOtpNameInput] = useState('');
+  const [mobileFieldError, setMobileFieldError] = useState<string | null>(null);
+  const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Email ID login / register state
+  const [emailFullName, setEmailFullName] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailErrors, setEmailErrors] = useState<Record<string, string>>({});
+  const [resetSentMessage, setResetSentMessage] = useState<string | null>(null);
+
+  // Authenticated delivery profile state
   const [displayName, setDisplayName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
   const [defaultAddress, setDefaultAddress] = useState('');
   const [defaultCity, setDefaultCity] = useState('');
   const [defaultPinCode, setDefaultPinCode] = useState('');
@@ -67,19 +125,101 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.displayName || authUser?.displayName || '');
+      setProfileEmail(profile.email || authUser?.email || '');
+      setProfilePhone(profile.phoneNumber || authUser?.phoneNumber || '');
       setDefaultAddress(profile.defaultAddress || '');
       setDefaultCity(profile.defaultCity || '');
       setDefaultPinCode(profile.defaultPinCode || '');
     } else if (authUser) {
-      setDisplayName(authUser.displayName || authUser.email?.split('@')[0] || '');
+      setDisplayName(
+        authUser.displayName || authUser.email?.split('@')[0] || authUser.phoneNumber || ''
+      );
+      setProfileEmail(authUser.email || '');
+      setProfilePhone(authUser.phoneNumber || '');
     }
   }, [profile, authUser]);
+
+  const switchAuthMethod = (next: 'mobile' | 'email') => {
+    setAuthMethod(next);
+    setMobileFieldError(null);
+    setEmailErrors({});
+    setResetSentMessage(null);
+    onClearAuthError();
+  };
+
+  const switchEmailMode = (next: 'signin' | 'register') => {
+    setEmailMode(next);
+    setEmailErrors({});
+    setResetSentMessage(null);
+    onClearAuthError();
+  };
+
+  const handleMobileOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMobileFieldError(null);
+
+    if (!pendingPhoneLabel) {
+      const err = validatePhoneNumberInput(mobileInput);
+      if (err) {
+        setMobileFieldError(err);
+        return;
+      }
+      await onSendPhoneOtp(mobileInput, recaptchaContainerRef.current);
+      return;
+    }
+
+    const cleanedOtp = otpInput.replace(/\D/g, '');
+    if (cleanedOtp.length !== 6) {
+      setMobileFieldError('Enter the 6-digit OTP received via SMS.');
+      return;
+    }
+    await onVerifyPhoneOtp(cleanedOtp, otpNameInput);
+  };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetSentMessage(null);
+    const errors = validateEmailAuthForm(emailMode, {
+      fullName: emailFullName,
+      email: emailInput,
+      password: passwordInput,
+    });
+    setEmailErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    if (emailMode === 'signin') {
+      await onEmailSignIn(emailInput, passwordInput);
+    } else {
+      await onEmailRegister(emailFullName, emailInput, passwordInput);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setResetSentMessage(null);
+    onClearAuthError();
+    if (!validateEmail(emailInput)) {
+      setEmailErrors((prev) => ({
+        ...prev,
+        email: 'Enter your registered email ID first to receive a password reset link.',
+      }));
+      return;
+    }
+    setEmailErrors({});
+    const ok = await onSendPasswordReset(emailInput);
+    if (ok) {
+      setResetSentMessage(
+        `Password reset link sent to ${emailInput.trim()}. Check your inbox to set a new password.`
+      );
+    }
+  };
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveMessage(null);
     const validation = validateCustomerProfileForm({
       displayName,
+      email: profileEmail,
+      phoneNumber: profilePhone,
       defaultAddress,
       defaultCity,
       defaultPinCode,
@@ -91,6 +231,8 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
     try {
       await onSaveProfile({
         displayName,
+        email: profileEmail,
+        phoneNumber: profilePhone,
         defaultAddress,
         defaultCity,
         defaultPinCode,
@@ -103,6 +245,8 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
       const msg =
         err instanceof Error && err.message.includes('Quota exceeded')
           ? 'Daily database quota reached. Please try again tomorrow.'
+          : err instanceof Error && err.message.includes('Verify your email ID')
+          ? err.message
           : 'Could not save your delivery details right now. Please try again.';
       setSaveMessage({ ok: false, text: msg });
     } finally {
@@ -128,29 +272,58 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
             Customer Account
           </p>
           <h1 className="mt-1 font-display text-3xl sm:text-4xl font-medium text-[#1C1613]">
-            Sign in to kcross india store
+            Login or Register
           </h1>
-          <p className="mt-1.5 text-sm text-[#6E6058] max-w-[60ch]">
-            Access your saved beauty wishlist, synced pan-India orders, studio consultations, and
-            express checkout address from any device.
+          <p className="mt-1.5 text-sm text-[#6E6058] max-w-[62ch]">
+            Enter your mobile number for instant OTP sign-in, sign in or register with your Email ID,
+            or continue with Google to sync your wishlist and pan-India orders.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
-          {/* Left: Google Sign-In Card */}
+          {/* Left: Login / Register Card */}
           <div className="lg:col-span-6 rounded-2xl border border-[#EAE1D8] bg-white p-6 sm:p-8 flex flex-col justify-between">
             <div>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#C2410C]">
                 <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span>Verified Member Access</span>
               </span>
-              <h2 className="mt-2 font-display text-2xl sm:text-3xl font-medium text-[#1C1613]">
-                Welcome back
-              </h2>
-              <p className="mt-2 text-sm text-[#574B44] leading-relaxed">
-                Sign in securely with your Google account. We automatically sync your wishlist and
-                save your order history privately to your customer profile.
-              </p>
+
+              {/* Primary Method Tabs: Mobile Number vs Email ID */}
+              <div
+                role="tablist"
+                aria-label="Sign-in method"
+                className="mt-4 grid grid-cols-2 gap-1.5 rounded-xl bg-[#F4ECE3] p-1"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={authMethod === 'mobile'}
+                  onClick={() => switchAuthMethod('mobile')}
+                  className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${
+                    authMethod === 'mobile'
+                      ? 'bg-white text-[#1C1613] shadow-sm'
+                      : 'text-[#574B44] hover:text-[#1C1613]'
+                  }`}
+                >
+                  <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span>Mobile Number</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={authMethod === 'email'}
+                  onClick={() => switchAuthMethod('email')}
+                  className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${
+                    authMethod === 'email'
+                      ? 'bg-white text-[#1C1613] shadow-sm'
+                      : 'text-[#574B44] hover:text-[#1C1613]'
+                  }`}
+                >
+                  <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span>Email ID</span>
+                </button>
+              </div>
 
               {authError && (
                 <div
@@ -161,12 +334,297 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                 </div>
               )}
 
+              {/* Tab 1: Mobile Number (OTP Login / Register) */}
+              {authMethod === 'mobile' && (
+                <form onSubmit={handleMobileOtpSubmit} noValidate className="mt-5 space-y-4">
+                  {!pendingPhoneLabel ? (
+                    <>
+                      <div>
+                        <label
+                          htmlFor="auth-mobile"
+                          className="block text-xs font-semibold text-[#1C1613] mb-1.5"
+                        >
+                          Enter Mobile Number
+                        </label>
+                        <div className="flex items-stretch rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] focus-within:border-[#C2410C]">
+                          <span className="inline-flex items-center px-3 text-xs font-semibold text-[#574B44] border-r border-[#EAE1D8] bg-[#F6EFE7] rounded-l-lg">
+                            +91
+                          </span>
+                          <input
+                            id="auth-mobile"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel-national"
+                            value={mobileInput}
+                            onChange={(e) => {
+                              setMobileInput(e.target.value);
+                              setMobileFieldError(null);
+                            }}
+                            placeholder="98765 43210"
+                            className="w-full rounded-r-lg bg-transparent px-3 py-2.5 text-sm font-mono-num text-[#1C1613] placeholder:text-[#8A7B72] focus:outline-none"
+                          />
+                        </div>
+                        {mobileFieldError ? (
+                          <p className="mt-1.5 text-xs text-[#B91C1C]">{mobileFieldError}</p>
+                        ) : (
+                          <p className="mt-1.5 text-[11px] text-[#6E6058]">
+                            New or existing customer? Enter your 10-digit Indian mobile (or{' '}
+                            <span className="font-mono-num">+country</span>) to receive a 6-digit
+                            SMS OTP.
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSigningIn}
+                        className="w-full rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412] disabled:opacity-60"
+                      >
+                        {isSigningIn ? 'Sending OTP...' : 'Send OTP'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="rounded-xl border border-[#EAE1D8] bg-[#FCF9F5] px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
+                        <div>
+                          <span className="text-[#6E6058]">OTP sent to </span>
+                          <span className="font-mono-num font-bold text-[#1C1613]">
+                            {pendingPhoneLabel}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOtpInput('');
+                            setMobileFieldError(null);
+                            onResetPhoneOtp();
+                          }}
+                          className="font-semibold text-[#C2410C] hover:underline"
+                        >
+                          Change
+                        </button>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="auth-otp"
+                          className="block text-xs font-semibold text-[#1C1613] mb-1.5"
+                        >
+                          6-Digit SMS OTP
+                        </label>
+                        <input
+                          id="auth-otp"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          autoComplete="one-time-code"
+                          value={otpInput}
+                          onChange={(e) => {
+                            setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6));
+                            setMobileFieldError(null);
+                          }}
+                          placeholder="••••••"
+                          className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-base tracking-[0.35em] font-mono-num text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                        />
+                        {mobileFieldError && (
+                          <p className="mt-1 text-xs text-[#B91C1C]">{mobileFieldError}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="auth-otp-name"
+                          className="block text-xs font-semibold text-[#1C1613] mb-1.5"
+                        >
+                          Your Name <span className="font-normal text-[#6E6058]">(optional for new accounts)</span>
+                        </label>
+                        <input
+                          id="auth-otp-name"
+                          type="text"
+                          autoComplete="name"
+                          value={otpNameInput}
+                          onChange={(e) => setOtpNameInput(e.target.value)}
+                          placeholder="Aarav Sharma"
+                          className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-2.5">
+                        <button
+                          type="submit"
+                          disabled={isSigningIn}
+                          className="flex-1 rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412] disabled:opacity-60"
+                        >
+                          {isSigningIn ? 'Verifying...' : 'Verify & Sign In'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSigningIn}
+                          onClick={() => onSendPhoneOtp(pendingPhoneLabel, recaptchaContainerRef.current)}
+                          className="rounded-lg border border-[#D8CEC4] bg-white px-4 py-3 text-xs font-semibold text-[#1C1613] hover:border-[#1C1613] disabled:opacity-60"
+                        >
+                          Resend OTP
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  <div ref={recaptchaContainerRef} className="min-h-[1px]" />
+                </form>
+              )}
+
+              {/* Tab 2: Email ID Sign In / Register */}
+              {authMethod === 'email' && (
+                <div className="mt-5 space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#F3ECE4] pb-2.5">
+                    <span className="text-xs font-semibold text-[#1C1613]">
+                      {emailMode === 'signin'
+                        ? 'Sign in with Email ID'
+                        : 'Register with Email ID'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => switchEmailMode(emailMode === 'signin' ? 'register' : 'signin')}
+                      className="text-xs font-semibold text-[#C2410C] hover:underline"
+                    >
+                      {emailMode === 'signin' ? 'Create Account' : 'Existing user? Sign In'}
+                    </button>
+                  </div>
+
+                  {resetSentMessage && (
+                    <div
+                      role="status"
+                      className="rounded-xl border border-[#C6DFCB] bg-[#F3FAF5] p-3 text-xs text-[#1E462A]"
+                    >
+                      {resetSentMessage}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleEmailSubmit} noValidate className="space-y-3.5">
+                    {emailMode === 'register' && (
+                      <div>
+                        <label
+                          htmlFor="auth-email-name"
+                          className="block text-xs font-semibold text-[#1C1613] mb-1"
+                        >
+                          Full Name
+                        </label>
+                        <input
+                          id="auth-email-name"
+                          type="text"
+                          autoComplete="name"
+                          value={emailFullName}
+                          onChange={(e) => setEmailFullName(e.target.value)}
+                          placeholder="Your full name"
+                          className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                        />
+                        {emailErrors.fullName && (
+                          <p className="mt-1 text-xs text-[#B91C1C]">{emailErrors.fullName}</p>
+                        )}
+                      </div>
+                    )}
+
+                    <div>
+                      <label
+                        htmlFor="auth-email"
+                        className="block text-xs font-semibold text-[#1C1613] mb-1"
+                      >
+                        Email ID
+                      </label>
+                      <input
+                        id="auth-email"
+                        type="email"
+                        autoComplete="email"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                      />
+                      {emailErrors.email && (
+                        <p className="mt-1 text-xs text-[#B91C1C]">{emailErrors.email}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label
+                          htmlFor="auth-password"
+                          className="block text-xs font-semibold text-[#1C1613]"
+                        >
+                          Password
+                        </label>
+                        {emailMode === 'signin' && (
+                          <button
+                            type="button"
+                            onClick={handleForgotPassword}
+                            disabled={isSigningIn}
+                            className="text-[11px] font-semibold text-[#C2410C] hover:underline disabled:opacity-60"
+                          >
+                            Forgot password?
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <input
+                          id="auth-password"
+                          type={showPassword ? 'text' : 'password'}
+                          autoComplete={
+                            emailMode === 'signin' ? 'current-password' : 'new-password'
+                          }
+                          value={passwordInput}
+                          onChange={(e) => setPasswordInput(e.target.value)}
+                          placeholder="Minimum 6 characters"
+                          className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] pl-3 pr-10 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#6E6058] hover:text-[#1C1613]"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" aria-hidden="true" />
+                          ) : (
+                            <Eye className="h-4 w-4" aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
+                      {emailErrors.password && (
+                        <p className="mt-1 text-xs text-[#B91C1C]">{emailErrors.password}</p>
+                      )}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSigningIn}
+                      className="w-full rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412] disabled:opacity-60"
+                    >
+                      {isSigningIn
+                        ? emailMode === 'signin'
+                          ? 'Signing In...'
+                          : 'Creating Account...'
+                        : emailMode === 'signin'
+                        ? 'Sign In with Email ID'
+                        : 'Create Account'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* Divider + Google Sign-In */}
               <div className="mt-6">
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-[#EAE1D8]" />
+                  <span className="mx-3 text-[11px] font-medium uppercase tracking-wider text-[#8A7B72]">
+                    or continue with
+                  </span>
+                  <div className="flex-grow border-t border-[#EAE1D8]" />
+                </div>
+
                 <button
                   type="button"
                   onClick={onSignInWithGoogle}
                   disabled={isSigningIn}
-                  className="w-full inline-flex items-center justify-center gap-3 rounded-lg bg-[#1C1613] px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#332924] disabled:opacity-60"
+                  className="mt-2 w-full inline-flex items-center justify-center gap-3 rounded-lg bg-[#1C1613] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#332924] disabled:opacity-60"
                 >
                   <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
                     <path
@@ -174,12 +632,12 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                       d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.9 1.5l2.7-2.6C16.9 3.3 14.7 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12S6.7 21.6 12 21.6c6.9 0 9.6-4.8 9.6-7.3 0-.5-.1-.9-.1-1.3H12z"
                     />
                   </svg>
-                  <span>{isSigningIn ? 'Opening Google Sign-In...' : 'Continue with Google'}</span>
+                  <span>Continue with Google</span>
                 </button>
               </div>
             </div>
 
-            <div className="mt-8 pt-5 border-t border-[#F3ECE4] space-y-3">
+            <div className="mt-7 pt-5 border-t border-[#F3ECE4] space-y-3">
               <p className="text-xs text-[#6E6058]">
                 Prefer guest shopping? You can browse, checkout, or check an existing order ID
                 anytime without signing in.
@@ -238,8 +696,8 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                       Order History &amp; Express Delivery Details
                     </h3>
                     <p className="mt-0.5 text-xs text-[#DDD3CC] leading-relaxed">
-                      Store your default street address, city, and PIN code for one-tap checkout
-                      prefill and instant order lookup.
+                      Store your mobile number, default street address, city, and PIN code for
+                      one-tap checkout prefill and instant order lookup.
                     </p>
                   </div>
                 </div>
@@ -260,7 +718,8 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
             </div>
 
             <p className="mt-6 pt-4 border-t border-white/15 text-xs text-[#DDD3CC]">
-              Protected by private owner-only account storage · No mobile number required.
+              Sign in with Mobile OTP, Email ID, or Google · Protected by private owner-only account
+              storage.
             </p>
           </div>
         </div>
@@ -268,13 +727,63 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
     );
   }
 
-  const initials = (profile?.displayName || authUser.displayName || authUser.email || 'K')
+  const primaryIdentifier =
+    authUser.email || authUser.phoneNumber || profile?.email || profile?.phoneNumber || '';
+  const initials = (
+    profile?.displayName ||
+    authUser.displayName ||
+    authUser.email ||
+    authUser.phoneNumber ||
+    'K'
+  )
     .trim()
     .slice(0, 2)
     .toUpperCase();
 
   return (
     <section className="py-8 sm:py-10 space-y-8">
+      {/* Email Verification Pending Prompt */}
+      {!isCloudVerified && (
+        <div
+          role="status"
+          className="rounded-2xl border border-[#F5D0A9] bg-[#FFF8F1] p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4"
+        >
+          <div className="flex items-start gap-3 min-w-0">
+            <AlertCircle className="h-5 w-5 text-[#C2410C] shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[#1C1613]">
+                Verify your Email ID to enable cloud profile &amp; wishlist sync
+              </p>
+              <p className="mt-0.5 text-xs text-[#574B44]">
+                We sent a verification link to{' '}
+                <span className="font-semibold">{authUser.email}</span>. Click it, then refresh
+                your session.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              disabled={isSigningIn}
+              onClick={onResendVerification}
+              className="rounded-lg border border-[#D8CEC4] bg-white px-3.5 py-2 text-xs font-semibold text-[#1C1613] hover:border-[#1C1613] disabled:opacity-60"
+            >
+              Resend Verification Email
+            </button>
+            <button
+              type="button"
+              disabled={isSigningIn}
+              onClick={onRefreshSession}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#C2410C] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#9A3412] disabled:opacity-60"
+            >
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>I&apos;ve Verified — Refresh</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header + Sign Out */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#EAE1D8] pb-6">
         <div className="flex items-center gap-4 min-w-0">
@@ -297,7 +806,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
             <h1 className="mt-0.5 font-display text-2xl sm:text-3xl font-medium text-[#1C1613] truncate">
               {profile?.displayName || authUser.displayName || 'kcross india store Customer'}
             </h1>
-            <p className="text-xs sm:text-sm text-[#6E6058] truncate">{authUser.email}</p>
+            <p className="text-xs sm:text-sm text-[#6E6058] truncate">{primaryIdentifier}</p>
           </div>
         </div>
 
@@ -395,6 +904,42 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
               {formErrors.displayName && (
                 <p className="mt-1 text-xs text-[#B91C1C]">{formErrors.displayName}</p>
               )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="prof-email" className="block text-xs font-semibold text-[#1C1613] mb-1">
+                  Email ID
+                </label>
+                <input
+                  id="prof-email"
+                  type="email"
+                  value={profileEmail}
+                  onChange={(e) => setProfileEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                />
+                {formErrors.email && (
+                  <p className="mt-1 text-xs text-[#B91C1C]">{formErrors.email}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="prof-phone" className="block text-xs font-semibold text-[#1C1613] mb-1">
+                  Mobile Number
+                </label>
+                <input
+                  id="prof-phone"
+                  type="tel"
+                  value={profilePhone}
+                  onChange={(e) => setProfilePhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm font-mono-num text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                />
+                {formErrors.phoneNumber && (
+                  <p className="mt-1 text-xs text-[#B91C1C]">{formErrors.phoneNumber}</p>
+                )}
+              </div>
             </div>
 
             <div>

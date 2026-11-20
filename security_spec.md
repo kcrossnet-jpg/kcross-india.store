@@ -1,8 +1,8 @@
 # Security Specification — kcross india Customer Account & Orders
 
 ## 1. Data Invariants
-1. **Strict Owner & Verification Gate**: Every read or write under `/users/{userId}` requires an authenticated user (`request.auth != null`) whose `request.auth.uid == userId`, and every write requires `request.auth.token.email_verified == true`.
-2. **PII Isolation (Split Collection)**: Customer email, default shipping address, city, PIN code, and wishlist live strictly in `/users/{userId}/private/profile`, separated from `/users/{userId}` identity metadata.
+1. **Strict Owner & Verification Gate**: Every read or write under `/users/{userId}` requires an authenticated user (`request.auth != null`) whose `request.auth.uid == userId`, and every write requires either `request.auth.token.email_verified == true` (Google / verified Email ID) or a Firebase OTP-verified `request.auth.token.phone_number` string.
+2. **PII Isolation (Split Collection)**: Customer email, mobile number, default shipping address, city, PIN code, and wishlist live strictly in `/users/{userId}/private/profile`, separated from `/users/{userId}` identity metadata.
 3. **Immutable Parent & Creation Fields**: `uid` and `createdAt` cannot be modified after creation (`incoming().uid == existing().uid` and `incoming().createdAt == existing().createdAt`). Temporal fields (`createdAt`, `updatedAt`) must equal `request.time`.
 4. **Master Gate Relational Check**: Subcollections `/users/{userId}/private/{docId}`, `/users/{userId}/orders/{orderId}`, and `/users/{userId}/bookings/{bookingId}` verify the parent `/users/{userId}` document exists (`exists(...)`) and has matching `uid`.
 5. **Terminal State & Integrity on Orders/Bookings**: Customer orders are created strictly with `status == 'Confirmed'` and cannot be arbitrarily escalated by the client; bookings are created strictly with `status == 'Confirmed'`.
