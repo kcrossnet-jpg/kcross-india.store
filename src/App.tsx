@@ -1,24 +1,24 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ConfirmationResult,
+  AuthProvider,
   createUserWithEmailAndPassword,
-  linkWithPhoneNumber,
   onAuthStateChanged,
-  RecaptchaVerifier,
-  reload,
-  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
-  signInWithPhoneNumber,
   signInWithPopup,
   signOut,
   updateProfile,
-  useDeviceLanguage,
   User,
 } from 'firebase/auth';
 import { Heart, Menu, Search, ShoppingBag, User as UserIcon, X } from 'lucide-react';
 import { CATEGORIES, PRODUCTS, SEEDED_ORDERS } from './data/catalog';
-import { auth, googleProvider, missingFirebaseEnvVars } from './firebase';
+import {
+  appleProvider,
+  auth,
+  googleProvider,
+  microsoftProvider,
+  missingFirebaseEnvVars,
+} from './firebase';
 import {
   ActiveView,
   CartItem,
@@ -31,7 +31,6 @@ import {
 import {
   calculateCartTotals,
   mapFirebaseAuthError,
-  normalizePhoneNumberWithCountry,
 } from './utils/storeLogic';
 import {
   ensureCustomerDocs,
@@ -61,14 +60,6 @@ import {
 } from './components/MobileAppInstall';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { ServicesView } from './components/ServicesView';
-
-declare global {
-  interface Window {
-    recaptchaVerifier?: RecaptchaVerifier;
-    confirmationResult?: ConfirmationResult;
-  }
-}
-
 function loadStored<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -116,33 +107,6 @@ export default function App() {
   const [cloudBookings, setCloudBookings] = useState<ServiceBooking[]>([]);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [pendingOtpConfirmation, setPendingOtpConfirmation] = useState<ConfirmationResult | null>(
-    null
-  );
-  const [pendingPhoneLabel, setPendingPhoneLabel] = useState<string | null>(null);
-  const [pendingLinkOtpConfirmation, setPendingLinkOtpConfirmation] =
-    useState<ConfirmationResult | null>(null);
-  const [pendingLinkPhoneLabel, setPendingLinkPhoneLabel] = useState<string | null>(null);
-  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
-  const recaptchaContainerElRef = useRef<HTMLElement | null>(null);
-
-  const clearRecaptcha = (containerEl?: HTMLElement | null) => {
-    const targetEl = containerEl ?? recaptchaContainerElRef.current;
-    if (recaptchaVerifierRef.current) {
-      try {
-        recaptchaVerifierRef.current.clear();
-      } catch {
-        // Ignore already-cleared widget errors
-      }
-      recaptchaVerifierRef.current = null;
-    }
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier = undefined;
-    }
-    if (targetEl) {
-      targetEl.replaceChildren();
-    }
-  };
 
   useEffect(() => {
     if (!auth) {
@@ -160,17 +124,11 @@ export default function App() {
     });
     return () => {
       unsub();
-      clearRecaptcha();
     };
   }, []);
 
-  const currentSessionUser = auth?.currentUser ?? authUser;
-  const isCloudVerified = Boolean(
-    currentSessionUser && (currentSessionUser.emailVerified || currentSessionUser.phoneNumber)
-  );
-
   useEffect(() => {
-    if (!authReady || !authUser || !isCloudVerified) return;
+    if (!authReady || !authUser) return;
     let active = true;
     let unsubData: (() => void) | null = null;
 
@@ -191,7 +149,7 @@ export default function App() {
             if (msg.includes('Quota exceeded') || msg.includes('resource-exhausted')) {
               setAuthError('Firestore daily quota reached. Your local session continues to work.');
             } else if (msg.includes('Missing or insufficient permissions') || msg.includes('permission-denied')) {
-              setAuthError('Cloud sync requires a verified Email ID or Mobile OTP session.');
+              setAuthError('Cloud sync unavailable right now. Please sign out and sign in again.');
             }
           },
         });
@@ -201,7 +159,7 @@ export default function App() {
         if (msg.includes('Quota exceeded')) {
           setAuthError('Firestore daily quota reached. Your local session continues to work.');
         } else if (msg.includes('Missing or insufficient permissions')) {
-          setAuthError('Cloud sync requires a verified Email ID or Mobile OTP session.');
+          setAuthError('Cloud sync unavailable right now. Please sign out and sign in again.');
         }
       });
 
@@ -209,7 +167,7 @@ export default function App() {
       active = false;
       if (unsubData) unsubData();
     };
-  }, [authReady, authUser, isCloudVerified, authRevision]);
+  }, [authReady, authUser, authRevision]);
 
   useEffect(() => {
     try {
@@ -349,7 +307,7 @@ export default function App() {
     const next = exists ? wishlistIds.filter((id) => id !== productId) : [...wishlistIds, productId];
     setWishlistIds(next);
     notify(exists ? 'Removed from wishlist' : 'Saved to wishlist');
-    if (authReady && authUser && isCloudVerified) {
+    if (authReady && authUser) {
       void syncWishlistToCloud(authUser.uid, next).catch(() => {});
     }
   };
@@ -359,7 +317,7 @@ export default function App() {
     setCart([]);
     setAppliedCoupon(null);
     notify(`Order ${order.orderNumber} confirmed`);
-    if (authReady && authUser && isCloudVerified) {
+    if (authReady && authUser) {
       void saveOrderToCloud(authUser.uid, order).catch((err) => {
         if (err instanceof Error && err.message.includes('Quota exceeded')) {
           notify('Saved locally. Daily cloud database quota reached.');
@@ -371,7 +329,7 @@ export default function App() {
   const handleCreateBooking = (booking: ServiceBooking) => {
     setBookings((prev) => [booking, ...prev]);
     notify(`Appointment ${booking.id} confirmed`);
-    if (authReady && authUser && isCloudVerified) {
+    if (authReady && authUser) {
       void saveBookingToCloud(authUser.uid, booking).catch((err) => {
         if (err instanceof Error && err.message.includes('Quota exceeded')) {
           notify('Saved locally. Daily cloud database quota reached.');
@@ -388,180 +346,18 @@ export default function App() {
     );
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleOAuthSignIn = async (provider: AuthProvider | null, providerLabel: string) => {
     setAuthError(null);
-    if (!auth || !googleProvider) {
+    if (!auth || !provider) {
       showFirebaseEnvError();
       return;
     }
     setIsSigningIn(true);
     try {
-      const cred = await signInWithPopup(auth, googleProvider);
-      setPendingOtpConfirmation(null);
-      setPendingPhoneLabel(null);
-      clearRecaptcha();
-      notify(`Signed in as ${cred.user.displayName || cred.user.email}`);
-    } catch (error) {
-      const code = (error as { code?: string })?.code || '';
-      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
-
-  const handleSendPhoneOtp = async (
-    rawPhone: string,
-    recaptchaContainer: HTMLElement | null,
-    countryDialCode = '+91'
-  ): Promise<boolean> => {
-    setAuthError(null);
-    if (!auth) {
-      showFirebaseEnvError();
-      return false;
-    }
-    if (!recaptchaContainer) {
-      setAuthError('Security check container is not ready. Please try again.');
-      return false;
-    }
-    const normalizedPhone = normalizePhoneNumberWithCountry(rawPhone, countryDialCode);
-    if (!normalizedPhone) {
-      setAuthError('Enter a valid mobile number (e.g. +91 98765 43210).');
-      return false;
-    }
-    setIsSigningIn(true);
-    try {
-      recaptchaContainerElRef.current = recaptchaContainer;
-      clearRecaptcha(recaptchaContainer);
-      const widgetHost = document.createElement('div');
-      recaptchaContainer.appendChild(widgetHost);
-      useDeviceLanguage(auth);
-      const appVerifier = new RecaptchaVerifier(auth, widgetHost, {
-        size: 'invisible',
-        callback: () => {
-          // reCAPTCHA solved; signInWithPhoneNumber proceeds automatically.
-        },
-        'expired-callback': () => {
-          clearRecaptcha(recaptchaContainer);
-        },
-        'error-callback': () => {
-          clearRecaptcha(recaptchaContainer);
-        },
-      });
-      recaptchaVerifierRef.current = appVerifier;
-      window.recaptchaVerifier = appVerifier;
-      await appVerifier.render();
-      const confirmationResult = await signInWithPhoneNumber(auth, normalizedPhone, appVerifier);
-      window.confirmationResult = confirmationResult;
-      setPendingOtpConfirmation(confirmationResult);
-      setPendingPhoneLabel(normalizedPhone);
-      notify(`Verification code sent to ${normalizedPhone}`);
-      return true;
-    } catch (error) {
-      clearRecaptcha(recaptchaContainer);
-      const code = (error as { code?: string })?.code || '';
-      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
-      return false;
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
-
-  const handleVerifyPhoneOtp = async (
-    otpCode: string,
-    optionalName?: string
-  ): Promise<boolean> => {
-    setAuthError(null);
-    const activeConfirmation = pendingOtpConfirmation ?? window.confirmationResult ?? null;
-    if (!activeConfirmation) {
-      setAuthError('Your verification session expired. Please request a new code.');
-      return false;
-    }
-    setIsSigningIn(true);
-    try {
-      const result = await activeConfirmation.confirm(otpCode.trim());
-      const user = result.user;
-      if (optionalName && optionalName.trim()) {
-        await updateProfile(user, {
-          displayName: optionalName.trim().slice(0, 120),
-        }).catch(() => {});
-        await reload(user).catch(() => {});
-      }
-      window.confirmationResult = undefined;
-      setPendingOtpConfirmation(null);
-      setPendingPhoneLabel(null);
-      clearRecaptcha();
-      const verifiedUser = auth?.currentUser ?? user;
-      setAuthUser(verifiedUser);
+      const cred = await signInWithPopup(auth, provider);
       setAuthRevision((r) => r + 1);
-      notify(`Verified & signed in with ${verifiedUser.phoneNumber || 'mobile number'}`);
-      return true;
+      notify(`Signed in with ${providerLabel} as ${cred.user.displayName || cred.user.email || 'Member'}`);
     } catch (error) {
-      const code = (error as { code?: string })?.code || '';
-      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
-      return false;
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
-
-  const handleResetPhoneOtp = () => {
-    window.confirmationResult = undefined;
-    setPendingOtpConfirmation(null);
-    setPendingPhoneLabel(null);
-    setAuthError(null);
-    clearRecaptcha();
-  };
-
-  const handleSendLinkPhoneOtp = async (
-    rawPhone: string,
-    recaptchaContainer: HTMLElement | null
-  ) => {
-    setAuthError(null);
-    if (!auth || !auth.currentUser) {
-      setAuthError('Sign in first to link a mobile number.');
-      return;
-    }
-    if (!recaptchaContainer) {
-      setAuthError('Security check container is not ready. Please try again.');
-      return;
-    }
-    const normalizedPhone = normalizePhoneNumberWithCountry(rawPhone, '+91');
-    if (!normalizedPhone) {
-      setAuthError('Enter a valid 10-digit Indian mobile number or include country code (+91...).');
-      return;
-    }
-    setIsSigningIn(true);
-    try {
-      recaptchaContainerElRef.current = recaptchaContainer;
-      clearRecaptcha(recaptchaContainer);
-      const widgetHost = document.createElement('div');
-      recaptchaContainer.appendChild(widgetHost);
-      useDeviceLanguage(auth);
-      const appVerifier = new RecaptchaVerifier(auth, widgetHost, {
-        size: 'invisible',
-        callback: () => {
-          // reCAPTCHA solved; linkWithPhoneNumber proceeds automatically.
-        },
-        'expired-callback': () => {
-          clearRecaptcha(recaptchaContainer);
-        },
-        'error-callback': () => {
-          clearRecaptcha(recaptchaContainer);
-        },
-      });
-      recaptchaVerifierRef.current = appVerifier;
-      window.recaptchaVerifier = appVerifier;
-      await appVerifier.render();
-      const confirmationResult = await linkWithPhoneNumber(
-        auth.currentUser,
-        normalizedPhone,
-        appVerifier
-      );
-      setPendingLinkOtpConfirmation(confirmationResult);
-      setPendingLinkPhoneLabel(normalizedPhone);
-      notify(`Verification code sent to ${normalizedPhone}`);
-    } catch (error) {
-      clearRecaptcha(recaptchaContainer);
       const code = (error as { code?: string })?.code || '';
       setAuthError(mapFirebaseAuthError(code, window.location.hostname));
     } finally {
@@ -569,42 +365,9 @@ export default function App() {
     }
   };
 
-  const handleConfirmLinkPhoneOtp = async (otpCode: string): Promise<boolean> => {
-    setAuthError(null);
-    if (!pendingLinkOtpConfirmation) {
-      setAuthError('Your verification session expired. Please request a new code.');
-      return false;
-    }
-    setIsSigningIn(true);
-    try {
-      const cred = await pendingLinkOtpConfirmation.confirm(otpCode.trim());
-      if (auth?.currentUser) {
-        await reload(auth.currentUser).catch(() => {});
-        setAuthUser(auth.currentUser);
-      } else {
-        setAuthUser(cred.user);
-      }
-      setPendingLinkOtpConfirmation(null);
-      setPendingLinkPhoneLabel(null);
-      clearRecaptcha();
-      setAuthRevision((r) => r + 1);
-      notify('Mobile number verified and linked to your account');
-      return true;
-    } catch (error) {
-      const code = (error as { code?: string })?.code || '';
-      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
-      return false;
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
-
-  const handleResetLinkPhoneOtp = () => {
-    setPendingLinkOtpConfirmation(null);
-    setPendingLinkPhoneLabel(null);
-    setAuthError(null);
-    clearRecaptcha();
-  };
+  const handleGoogleSignIn = () => handleOAuthSignIn(googleProvider, 'Google');
+  const handleMicrosoftSignIn = () => handleOAuthSignIn(microsoftProvider, 'Microsoft');
+  const handleAppleSignIn = () => handleOAuthSignIn(appleProvider, 'Apple');
 
   const handleEmailSignIn = async (email: string, password: string) => {
     setAuthError(null);
@@ -615,9 +378,7 @@ export default function App() {
     setIsSigningIn(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-      setPendingOtpConfirmation(null);
-      setPendingPhoneLabel(null);
-      clearRecaptcha();
+      setAuthRevision((r) => r + 1);
       notify(`Signed in as ${cred.user.displayName || cred.user.email}`);
     } catch (error) {
       const code = (error as { code?: string })?.code || '';
@@ -639,12 +400,8 @@ export default function App() {
       await updateProfile(cred.user, {
         displayName: fullName.trim().slice(0, 120),
       });
-      await sendEmailVerification(cred.user).catch(() => {});
-      setPendingOtpConfirmation(null);
-      setPendingPhoneLabel(null);
-      clearRecaptcha();
       setAuthRevision((r) => r + 1);
-      notify(`Account created! Verify ${email.trim()} via the link sent to your inbox.`);
+      notify(`Welcome, ${fullName.trim()}! Your account is ready.`);
     } catch (error) {
       const code = (error as { code?: string })?.code || '';
       setAuthError(mapFirebaseAuthError(code, window.location.hostname));
@@ -673,49 +430,10 @@ export default function App() {
     }
   };
 
-  const handleResendVerification = async () => {
-    if (!auth?.currentUser || auth.currentUser.emailVerified) return;
-    setAuthError(null);
-    setIsSigningIn(true);
-    try {
-      await sendEmailVerification(auth.currentUser);
-      notify(`Verification link sent to ${auth.currentUser.email}`);
-    } catch (error) {
-      const code = (error as { code?: string })?.code || '';
-      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
-
-  const handleRefreshSession = async () => {
-    if (!auth?.currentUser) return;
-    setIsSigningIn(true);
-    try {
-      await reload(auth.currentUser);
-      setAuthRevision((r) => r + 1);
-      if (auth.currentUser.emailVerified) {
-        notify('Email verified! Cloud profile & wishlist sync enabled.');
-      } else {
-        notify('Still awaiting email verification. Check your inbox or spam folder.');
-      }
-    } catch {
-      notify('Unable to refresh session status right now.');
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
-
   const handleSignOut = async () => {
     if (!auth) return;
     try {
       await signOut(auth);
-      window.confirmationResult = undefined;
-      setPendingOtpConfirmation(null);
-      setPendingPhoneLabel(null);
-      setPendingLinkOtpConfirmation(null);
-      setPendingLinkPhoneLabel(null);
-      clearRecaptcha();
       setAuthError(null);
       notify('Signed out of your customer account');
     } catch {
@@ -726,19 +444,14 @@ export default function App() {
   const handleSaveProfile = async (data: {
     displayName: string;
     email?: string;
-    phoneNumber?: string;
     defaultAddress: string;
     defaultCity: string;
     defaultPinCode: string;
   }) => {
     if (!authUser) return;
-    if (!isCloudVerified) {
-      throw new Error('Verify your Email ID or link a Mobile OTP before syncing delivery details to cloud.');
-    }
     await saveCustomerDeliveryProfile(authUser.uid, {
       displayName: data.displayName,
       email: data.email ?? customerProfile?.email ?? authUser.email ?? '',
-      phoneNumber: data.phoneNumber ?? customerProfile?.phoneNumber ?? authUser.phoneNumber ?? '',
       defaultAddress: data.defaultAddress,
       defaultCity: data.defaultCity,
       defaultPinCode: data.defaultPinCode,
@@ -1082,27 +795,18 @@ export default function App() {
           <CustomerAuthView
             authReady={authReady}
             authUser={authUser}
-            isCloudVerified={isCloudVerified}
             profile={customerProfile}
             orders={mergedOrders}
             bookings={mergedBookings}
             wishlistCount={wishlistIds.length}
             authError={authError}
             isSigningIn={isSigningIn}
-            pendingPhoneLabel={pendingPhoneLabel}
-            pendingLinkPhoneLabel={pendingLinkPhoneLabel}
             onSignInWithGoogle={handleGoogleSignIn}
-            onSendPhoneOtp={handleSendPhoneOtp}
-            onVerifyPhoneOtp={handleVerifyPhoneOtp}
-            onResetPhoneOtp={handleResetPhoneOtp}
-            onSendLinkPhoneOtp={handleSendLinkPhoneOtp}
-            onConfirmLinkPhoneOtp={handleConfirmLinkPhoneOtp}
-            onResetLinkPhoneOtp={handleResetLinkPhoneOtp}
+            onSignInWithMicrosoft={handleMicrosoftSignIn}
+            onSignInWithApple={handleAppleSignIn}
             onEmailSignIn={handleEmailSignIn}
             onEmailRegister={handleEmailRegister}
             onSendPasswordReset={handleSendPasswordReset}
-            onResendVerification={handleResendVerification}
-            onRefreshSession={handleRefreshSession}
             onClearAuthError={() => setAuthError(null)}
             onSignOut={handleSignOut}
             onSaveProfile={handleSaveProfile}

@@ -23,17 +23,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isVerifiedOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId && (
-        request.auth.token.email_verified == true ||
-        ('phone_number' in request.auth.token &&
-          request.auth.token.phone_number is string &&
-          request.auth.token.phone_number.size() >= 8)
-      );
-    }
-
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return isSignedIn() &&
+        request.auth.uid == userId &&
+        request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
     function isValidCustomerAccount(data, userId) {
@@ -123,11 +116,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isValidId(userId) && isOwner(userId);
       allow list: if false;
-      allow create: if isValidId(userId) && isVerifiedOwner(userId) &&
+      allow create: if isValidId(userId) && isOwner(userId) &&
         isValidCustomerAccount(incoming(), userId) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time;
-      allow update: if isValidId(userId) && isVerifiedOwner(userId) &&
+      allow update: if isValidId(userId) && isOwner(userId) &&
         isValidCustomerAccount(incoming(), userId) &&
         incoming().uid == existing().uid &&
         incoming().createdAt == existing().createdAt &&
@@ -139,12 +132,12 @@ service cloud.firestore {
         allow get: if isValidId(userId) && isValidId(docId) && docId == 'profile' && isOwner(userId);
         allow list: if false;
         allow create: if isValidId(userId) && isValidId(docId) && docId == 'profile' &&
-          isVerifiedOwner(userId) &&
+          isOwner(userId) &&
           isValidPrivateProfile(incoming(), userId) &&
           incoming().updatedAt == request.time &&
           exists(/databases/$(database)/documents/users/$(userId));
         allow update: if isValidId(userId) && isValidId(docId) && docId == 'profile' &&
-          isVerifiedOwner(userId) &&
+          isOwner(userId) &&
           isValidPrivateProfile(incoming(), userId) &&
           incoming().uid == existing().uid &&
           incoming().updatedAt == request.time &&
@@ -157,7 +150,7 @@ service cloud.firestore {
         allow get: if isValidId(userId) && isValidId(orderId) && isOwner(userId);
         allow list: if isOwner(userId) && resource.data.uid == request.auth.uid;
         allow create: if isValidId(userId) && isValidId(orderId) &&
-          isVerifiedOwner(userId) &&
+          isOwner(userId) &&
           isValidCustomerOrder(incoming(), userId) &&
           incoming().status == 'Confirmed' &&
           incoming().createdAt == request.time &&
@@ -170,7 +163,7 @@ service cloud.firestore {
         allow get: if isValidId(userId) && isValidId(bookingId) && isOwner(userId);
         allow list: if isOwner(userId) && resource.data.uid == request.auth.uid;
         allow create: if isValidId(userId) && isValidId(bookingId) &&
-          isVerifiedOwner(userId) &&
+          isOwner(userId) &&
           isValidCustomerBooking(incoming(), userId) &&
           incoming().status == 'Confirmed' &&
           incoming().createdAt == request.time &&

@@ -281,41 +281,21 @@ export function mapFirebaseAuthError(code: string, hostname = ''): string {
     case 'auth/web-storage-unsupported':
       return 'Browser storage or third-party cookies are blocked. Enable cookies/storage and try again.';
     case 'auth/operation-not-allowed':
-      return 'This sign-in method is not enabled yet. Enable Phone and Email/Password in Firebase Console -> Authentication -> Sign-in method.';
-    case 'auth/billing-not-enabled':
-      return 'Real SMS verification codes require the Firebase Blaze plan, or add a test number under Firebase Console -> Authentication -> Sign-in method -> Phone -> Phone numbers for testing.';
-    case 'auth/invalid-app-credential':
-    case 'auth/missing-app-credential':
-      return `reCAPTCHA app verification failed for "${hostname || 'this domain'}". Confirm the domain is listed in Firebase Console -> Authentication -> Settings -> Authorized domains.`;
-    case 'auth/missing-phone-number':
-      return 'Enter your mobile number to receive a verification code.';
+      return 'This sign-in method is not enabled yet. Enable Email/Password, Google, Microsoft, or Apple in Firebase Console -> Authentication -> Sign-in method.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists with this email under another sign-in method. Please continue with your original provider (Google, Microsoft, Apple, or Email ID).';
     case 'auth/invalid-credential':
     case 'auth/wrong-password':
     case 'auth/user-not-found':
       return 'Incorrect email address or password. Please check and try again.';
     case 'auth/email-already-in-use':
       return 'An account with this email already exists. Switch to Sign In with Email ID.';
-    case 'auth/credential-already-in-use':
-      return 'This mobile number is already linked to another customer account.';
-    case 'auth/provider-already-linked':
-      return 'A verified mobile number is already linked to this account.';
     case 'auth/weak-password':
       return 'Please choose a stronger password (at least 6 characters).';
-    case 'auth/invalid-phone-number':
-      return 'Enter a valid mobile number with country code (e.g. +91 98765 43210).';
-    case 'auth/invalid-verification-code':
-      return 'The 6-digit OTP entered is incorrect. Please check your SMS and try again.';
-    case 'auth/code-expired':
-    case 'auth/session-expired':
-      return 'This verification code has expired. Click Resend OTP to request a new SMS code.';
     case 'auth/too-many-requests':
       return 'Too many attempts detected. Please wait a few minutes before trying again.';
-    case 'auth/captcha-check-failed':
-      return 'reCAPTCHA verification failed. Please wait a moment and request a new OTP.';
     case 'auth/network-request-failed':
       return 'Network error while reaching Firebase Authentication. Check your connection and try again.';
-    case 'auth/quota-exceeded':
-      return 'SMS OTP daily quota reached. Try Email ID or Google Sign-In.';
     default:
       return code
         ? `Unable to complete sign-in right now (${code}). Please try again.`

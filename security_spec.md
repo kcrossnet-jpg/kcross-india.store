@@ -1,8 +1,8 @@
 # Security Specification — kcross india Customer Account & Orders
 
 ## 1. Data Invariants
-1. **Strict Owner & Verification Gate**: Every read or write under `/users/{userId}` requires an authenticated user (`request.auth != null`) whose `request.auth.uid == userId`, and every write requires either `request.auth.token.email_verified == true` (Google / verified Email ID) or a Firebase OTP-verified `request.auth.token.phone_number` string.
-2. **PII Isolation (Split Collection)**: Customer email, mobile number, default shipping address, city, PIN code, and wishlist live strictly in `/users/{userId}/private/profile`, separated from `/users/{userId}` identity metadata.
+1. **Strict Non-Anonymous Owner Gate**: Every read or write under `/users/{userId}` requires a signed-in, non-anonymous user (`request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous'`) whose `request.auth.uid == userId` (covering Email ID, Google, Microsoft, and Apple providers).
+2. **PII Isolation (Split Collection)**: Customer email, optional contact phone, default shipping address, city, PIN code, and wishlist live strictly in `/users/{userId}/private/profile`, separated from `/users/{userId}` identity metadata.
 3. **Immutable Parent & Creation Fields**: `uid` and `createdAt` cannot be modified after creation (`incoming().uid == existing().uid` and `incoming().createdAt == existing().createdAt`). Temporal fields (`createdAt`, `updatedAt`) must equal `request.time`.
 4. **Master Gate Relational Check**: Subcollections `/users/{userId}/private/{docId}`, `/users/{userId}/orders/{orderId}`, and `/users/{userId}/bookings/{bookingId}` verify the parent `/users/{userId}` document exists (`exists(...)`) and has matching `uid`.
 5. **Terminal State & Integrity on Orders/Bookings**: Customer orders are created strictly with `status == 'Confirmed'` and cannot be arbitrarily escalated by the client; bookings are created strictly with `status == 'Confirmed'`.
@@ -10,7 +10,7 @@
 ## 2. The "Dirty Dozen" Attack Payloads (All Must Fail with PERMISSION_DENIED)
 1. **Unauthenticated read of another user's private profile** (`/users/u1/private/profile`, `auth = null`) -> DENIED.
 2. **Cross-user read** (`/users/u1/orders/ord1` read by `u2`) -> DENIED.
-3. **Unverified email write** (`email_verified: false` creating `/users/u1`) -> DENIED.
+3. **Anonymous auth write** (`sign_in_provider: "anonymous"` creating `/users/u1`) -> DENIED.
 4. **UID Spoofing on create** (`u1` creating `/users/u1/orders/ord1` with `uid: "u2"`) -> DENIED.
 5. **Shadow / Ghost Field injection** (`isAdmin: true` or `role: "admin"` added to `/users/u1`) -> DENIED by `keys().hasOnly(...)`.
 6. **Privilege Escalation on private profile update** (`uid` changed in `/users/u1/private/profile`) -> DENIED by `affectedKeys().hasOnly(...)` and immutability check.
