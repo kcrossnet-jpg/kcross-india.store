@@ -1,5 +1,5 @@
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import { Auth, getAuth, GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
+import { Auth, getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { doc, Firestore, getDocFromServer, getFirestore } from 'firebase/firestore';
 import { resolveFirebaseConfig } from './utils/firebaseConfig';
 
@@ -45,26 +45,17 @@ let app: FirebaseApp | null = null;
 let dbInstance: Firestore | null = null;
 let authInstance: Auth | null = null;
 let googleProviderInstance: GoogleAuthProvider | null = null;
-let microsoftProviderInstance: OAuthProvider | null = null;
-let appleProviderInstance: OAuthProvider | null = null;
 
 if (isFirebaseConfigured) {
   app = initializeApp(firebaseConfig);
   dbInstance = firestoreDatabaseId ? getFirestore(app, firestoreDatabaseId) : getFirestore(app);
   authInstance = getAuth(app);
   googleProviderInstance = new GoogleAuthProvider();
-  microsoftProviderInstance = new OAuthProvider('microsoft.com');
-  microsoftProviderInstance.setCustomParameters({ prompt: 'select_account' });
-  appleProviderInstance = new OAuthProvider('apple.com');
-  appleProviderInstance.addScope('email');
-  appleProviderInstance.addScope('name');
 }
 
 export const db = dbInstance;
 export const auth = authInstance;
 export const googleProvider = googleProviderInstance;
-export const microsoftProvider = microsoftProviderInstance;
-export const appleProvider = appleProviderInstance;
 
 export enum OperationType {
   CREATE = 'create',

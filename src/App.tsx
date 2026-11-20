@@ -1,22 +1,25 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AuthProvider,
+  ConfirmationResult,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  RecaptchaVerifier,
+  reload,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPhoneNumber,
   signInWithPopup,
   signOut,
   updateProfile,
+  useDeviceLanguage,
   User,
 } from 'firebase/auth';
 import { Heart, Menu, Search, ShoppingBag, User as UserIcon, X } from 'lucide-react';
 import { CATEGORIES, PRODUCTS, SEEDED_ORDERS } from './data/catalog';
 import {
-  appleProvider,
   auth,
   googleProvider,
-  microsoftProvider,
   missingFirebaseEnvVars,
 } from './firebase';
 import {
@@ -31,6 +34,7 @@ import {
 import {
   calculateCartTotals,
   mapFirebaseAuthError,
+  normalizePhoneNumberWithCountry,
 } from './utils/storeLogic';
 import {
   ensureCustomerDocs,
@@ -60,6 +64,13 @@ import {
 } from './components/MobileAppInstall';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { ServicesView } from './components/ServicesView';
+
+declare global {
+  interface Window {
+    recaptchaVerifier?: RecaptchaVerifier;
+    confirmationResult?: ConfirmationResult;
+  }
+}
 function loadStored<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -107,6 +118,30 @@ export default function App() {
   const [cloudBookings, setCloudBookings] = useState<ServiceBooking[]>([]);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [pendingOtpConfirmation, setPendingOtpConfirmation] = useState<ConfirmationResult | null>(
+    null
+  );
+  const [pendingPhoneLabel, setPendingPhoneLabel] = useState<string | null>(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const recaptchaContainerElRef = useRef<HTMLElement | null>(null);
+
+  const clearRecaptcha = (containerEl?: HTMLElement | null) => {
+    const targetEl = containerEl ?? recaptchaContainerElRef.current;
+    if (recaptchaVerifierRef.current) {
+      try {
+        recaptchaVerifierRef.current.clear();
+      } catch {
+        // Ignore already-cleared widget errors
+      }
+      recaptchaVerifierRef.current = null;
+    }
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier = undefined;
+    }
+    if (targetEl) {
+      targetEl.replaceChildren();
+    }
+  };
 
   useEffect(() => {
     if (!auth) {
@@ -124,6 +159,7 @@ export default function App() {
     });
     return () => {
       unsub();
+      clearRecaptcha();
     };
   }, []);
 
@@ -355,6 +391,9 @@ export default function App() {
     setIsSigningIn(true);
     try {
       const cred = await signInWithPopup(auth, provider);
+      setPendingOtpConfirmation(null);
+      setPendingPhoneLabel(null);
+      clearRecaptcha();
       setAuthRevision((r) => r + 1);
       notify(`Signed in with ${providerLabel} as ${cred.user.displayName || cred.user.email || 'Member'}`);
     } catch (error) {
@@ -366,8 +405,109 @@ export default function App() {
   };
 
   const handleGoogleSignIn = () => handleOAuthSignIn(googleProvider, 'Google');
-  const handleMicrosoftSignIn = () => handleOAuthSignIn(microsoftProvider, 'Microsoft');
-  const handleAppleSignIn = () => handleOAuthSignIn(appleProvider, 'Apple');
+
+  const handleSendPhoneOtp = async (
+    rawPhone: string,
+    recaptchaContainer: HTMLElement | null,
+    countryDialCode = '+91'
+  ): Promise<boolean> => {
+    setAuthError(null);
+    if (!auth) {
+      showFirebaseEnvError();
+      return false;
+    }
+    if (!recaptchaContainer) {
+      setAuthError('Security check container is not ready. Please try again.');
+      return false;
+    }
+    const normalizedPhone = normalizePhoneNumberWithCountry(rawPhone, countryDialCode);
+    if (!normalizedPhone) {
+      setAuthError('Enter a valid mobile number (e.g. +91 98765 43210).');
+      return false;
+    }
+    setIsSigningIn(true);
+    try {
+      recaptchaContainerElRef.current = recaptchaContainer;
+      clearRecaptcha(recaptchaContainer);
+      const widgetHost = document.createElement('div');
+      recaptchaContainer.appendChild(widgetHost);
+      useDeviceLanguage(auth);
+      const appVerifier = new RecaptchaVerifier(auth, widgetHost, {
+        size: 'invisible',
+        callback: () => {
+          // reCAPTCHA solved; signInWithPhoneNumber proceeds automatically.
+        },
+        'expired-callback': () => {
+          clearRecaptcha(recaptchaContainer);
+        },
+        'error-callback': () => {
+          clearRecaptcha(recaptchaContainer);
+        },
+      });
+      recaptchaVerifierRef.current = appVerifier;
+      window.recaptchaVerifier = appVerifier;
+      await appVerifier.render();
+      const confirmationResult = await signInWithPhoneNumber(auth, normalizedPhone, appVerifier);
+      window.confirmationResult = confirmationResult;
+      setPendingOtpConfirmation(confirmationResult);
+      setPendingPhoneLabel(normalizedPhone);
+      notify(`Verification code sent to ${normalizedPhone}`);
+      return true;
+    } catch (error) {
+      clearRecaptcha(recaptchaContainer);
+      const code = (error as { code?: string })?.code || '';
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+      return false;
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async (
+    otpCode: string,
+    optionalName?: string
+  ): Promise<boolean> => {
+    setAuthError(null);
+    const activeConfirmation = pendingOtpConfirmation ?? window.confirmationResult ?? null;
+    if (!activeConfirmation) {
+      setAuthError('Your verification session expired. Please request a new code.');
+      return false;
+    }
+    setIsSigningIn(true);
+    try {
+      const result = await activeConfirmation.confirm(otpCode.trim());
+      const user = result.user;
+      if (optionalName && optionalName.trim()) {
+        await updateProfile(user, {
+          displayName: optionalName.trim().slice(0, 120),
+        }).catch(() => {});
+        await reload(user).catch(() => {});
+      }
+      window.confirmationResult = undefined;
+      setPendingOtpConfirmation(null);
+      setPendingPhoneLabel(null);
+      clearRecaptcha();
+      const verifiedUser = auth?.currentUser ?? user;
+      setAuthUser(verifiedUser);
+      setAuthRevision((r) => r + 1);
+      notify(`Signed in with ${verifiedUser.phoneNumber || 'mobile phone'}`);
+      return true;
+    } catch (error) {
+      const code = (error as { code?: string })?.code || '';
+      setAuthError(mapFirebaseAuthError(code, window.location.hostname));
+      return false;
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleResetPhoneOtp = () => {
+    window.confirmationResult = undefined;
+    setPendingOtpConfirmation(null);
+    setPendingPhoneLabel(null);
+    setAuthError(null);
+    clearRecaptcha();
+  };
 
   const handleEmailSignIn = async (email: string, password: string) => {
     setAuthError(null);
@@ -378,6 +518,9 @@ export default function App() {
     setIsSigningIn(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      setPendingOtpConfirmation(null);
+      setPendingPhoneLabel(null);
+      clearRecaptcha();
       setAuthRevision((r) => r + 1);
       notify(`Signed in as ${cred.user.displayName || cred.user.email}`);
     } catch (error) {
@@ -400,6 +543,9 @@ export default function App() {
       await updateProfile(cred.user, {
         displayName: fullName.trim().slice(0, 120),
       });
+      setPendingOtpConfirmation(null);
+      setPendingPhoneLabel(null);
+      clearRecaptcha();
       setAuthRevision((r) => r + 1);
       notify(`Welcome, ${fullName.trim()}! Your account is ready.`);
     } catch (error) {
@@ -434,6 +580,10 @@ export default function App() {
     if (!auth) return;
     try {
       await signOut(auth);
+      window.confirmationResult = undefined;
+      setPendingOtpConfirmation(null);
+      setPendingPhoneLabel(null);
+      clearRecaptcha();
       setAuthError(null);
       notify('Signed out of your customer account');
     } catch {
@@ -444,6 +594,7 @@ export default function App() {
   const handleSaveProfile = async (data: {
     displayName: string;
     email?: string;
+    phoneNumber?: string;
     defaultAddress: string;
     defaultCity: string;
     defaultPinCode: string;
@@ -452,6 +603,7 @@ export default function App() {
     await saveCustomerDeliveryProfile(authUser.uid, {
       displayName: data.displayName,
       email: data.email ?? customerProfile?.email ?? authUser.email ?? '',
+      phoneNumber: data.phoneNumber ?? customerProfile?.phoneNumber ?? authUser.phoneNumber ?? '',
       defaultAddress: data.defaultAddress,
       defaultCity: data.defaultCity,
       defaultPinCode: data.defaultPinCode,
@@ -801,9 +953,11 @@ export default function App() {
             wishlistCount={wishlistIds.length}
             authError={authError}
             isSigningIn={isSigningIn}
+            pendingPhoneLabel={pendingPhoneLabel}
             onSignInWithGoogle={handleGoogleSignIn}
-            onSignInWithMicrosoft={handleMicrosoftSignIn}
-            onSignInWithApple={handleAppleSignIn}
+            onSendPhoneOtp={handleSendPhoneOtp}
+            onVerifyPhoneOtp={handleVerifyPhoneOtp}
+            onResetPhoneOtp={handleResetPhoneOtp}
             onEmailSignIn={handleEmailSignIn}
             onEmailRegister={handleEmailRegister}
             onSendPasswordReset={handleSendPasswordReset}

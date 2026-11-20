@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { User } from 'firebase/auth';
 import {
   ArrowRight,
@@ -11,6 +11,7 @@ import {
   Mail,
   MapPin,
   Package,
+  Phone,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
@@ -25,8 +26,18 @@ import {
   validateCustomerProfileForm,
   validateEmail,
   validateEmailAuthForm,
+  validatePhoneNumberInput,
 } from '../utils/storeLogic';
 import { PWAInstallButton } from './MobileAppInstall';
+
+const COUNTRY_CODES = [
+  { code: '+91', label: '+91 (IN)' },
+  { code: '+1', label: '+1 (US/CA)' },
+  { code: '+44', label: '+44 (UK)' },
+  { code: '+971', label: '+971 (UAE)' },
+  { code: '+65', label: '+65 (SG)' },
+  { code: '+61', label: '+61 (AU)' },
+];
 
 interface CustomerAuthViewProps {
   authReady: boolean;
@@ -37,9 +48,15 @@ interface CustomerAuthViewProps {
   wishlistCount: number;
   authError: string | null;
   isSigningIn: boolean;
+  pendingPhoneLabel: string | null;
   onSignInWithGoogle: () => void;
-  onSignInWithMicrosoft: () => void;
-  onSignInWithApple: () => void;
+  onSendPhoneOtp: (
+    rawPhone: string,
+    recaptchaContainer: HTMLElement | null,
+    countryDialCode?: string
+  ) => Promise<boolean>;
+  onVerifyPhoneOtp: (otpCode: string, optionalName?: string) => Promise<boolean>;
+  onResetPhoneOtp: () => void;
   onEmailSignIn: (email: string, password: string) => Promise<void>;
   onEmailRegister: (fullName: string, email: string, password: string) => Promise<void>;
   onSendPasswordReset: (email: string) => Promise<boolean>;
@@ -48,6 +65,7 @@ interface CustomerAuthViewProps {
   onSaveProfile: (data: {
     displayName: string;
     email?: string;
+    phoneNumber?: string;
     defaultAddress: string;
     defaultCity: string;
     defaultPinCode: string;
@@ -65,9 +83,11 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
   wishlistCount,
   authError,
   isSigningIn,
+  pendingPhoneLabel,
   onSignInWithGoogle,
-  onSignInWithMicrosoft,
-  onSignInWithApple,
+  onSendPhoneOtp,
+  onVerifyPhoneOtp,
+  onResetPhoneOtp,
   onEmailSignIn,
   onEmailRegister,
   onSendPasswordReset,
@@ -77,8 +97,20 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
   onNavigateView,
   onTrackOrder,
 }) => {
-  // Email ID sign-in / registration UI state
+  // Primary sign-in method tab ('mobile' or 'email')
+  const [authMethod, setAuthMethod] = useState<'mobile' | 'email'>('mobile');
   const [emailMode, setEmailMode] = useState<'signin' | 'register'>('signin');
+
+  // Mobile Phone OTP state
+  const [countryDialCode, setCountryDialCode] = useState('+91');
+  const [mobileInput, setMobileInput] = useState('');
+  const [otpInput, setOtpInput] = useState('');
+  const [otpNameInput, setOtpNameInput] = useState('');
+  const [mobileFieldError, setMobileFieldError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Email ID sign-in / registration UI state
   const [emailFullName, setEmailFullName] = useState('');
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -89,6 +121,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
   // Authenticated delivery profile state
   const [displayName, setDisplayName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
   const [defaultAddress, setDefaultAddress] = useState('');
   const [defaultCity, setDefaultCity] = useState('');
   const [defaultPinCode, setDefaultPinCode] = useState('');
@@ -97,23 +130,75 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
   const [saveMessage, setSaveMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
+    if (pendingPhoneLabel) {
+      setResendCooldown(30);
+    } else {
+      setResendCooldown(0);
+    }
+  }, [pendingPhoneLabel]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  useEffect(() => {
     if (profile) {
       setDisplayName(profile.displayName || authUser?.displayName || '');
       setProfileEmail(profile.email || authUser?.email || '');
+      setProfilePhone(profile.phoneNumber || authUser?.phoneNumber || '');
       setDefaultAddress(profile.defaultAddress || '');
       setDefaultCity(profile.defaultCity || '');
       setDefaultPinCode(profile.defaultPinCode || '');
     } else if (authUser) {
-      setDisplayName(authUser.displayName || authUser.email?.split('@')[0] || '');
+      setDisplayName(
+        authUser.displayName || authUser.email?.split('@')[0] || authUser.phoneNumber || ''
+      );
       setProfileEmail(authUser.email || '');
+      setProfilePhone(authUser.phoneNumber || '');
     }
   }, [profile, authUser]);
+
+  const switchAuthMethod = (next: 'mobile' | 'email') => {
+    setAuthMethod(next);
+    setMobileFieldError(null);
+    setEmailErrors({});
+    setResetSentMessage(null);
+    onClearAuthError();
+  };
 
   const switchEmailMode = (next: 'signin' | 'register') => {
     setEmailMode(next);
     setEmailErrors({});
     setResetSentMessage(null);
     onClearAuthError();
+  };
+
+  const handleMobileOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMobileFieldError(null);
+
+    if (!pendingPhoneLabel) {
+      const err = validatePhoneNumberInput(mobileInput, countryDialCode);
+      if (err) {
+        setMobileFieldError(err);
+        return;
+      }
+      await onSendPhoneOtp(mobileInput, recaptchaContainerRef.current, countryDialCode);
+      return;
+    }
+
+    const cleanedOtp = otpInput.replace(/\D/g, '');
+    if (cleanedOtp.length !== 6) {
+      setMobileFieldError('Enter the 6-digit verification code received via SMS.');
+      return;
+    }
+    const ok = await onVerifyPhoneOtp(cleanedOtp, otpNameInput);
+    if (ok) {
+      setOtpInput('');
+      setOtpNameInput('');
+    }
   };
 
 
@@ -161,6 +246,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
     const validation = validateCustomerProfileForm({
       displayName,
       email: profileEmail,
+      phoneNumber: profilePhone,
       defaultAddress,
       defaultCity,
       defaultPinCode,
@@ -173,6 +259,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
       await onSaveProfile({
         displayName,
         email: profileEmail,
+        phoneNumber: profilePhone,
         defaultAddress,
         defaultCity,
         defaultPinCode,
@@ -213,8 +300,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
             Login or Register
           </h1>
           <p className="mt-1.5 text-sm text-[#6E6058] max-w-[62ch]">
-            Sign in or create an account with your Email ID, or continue with Google, Microsoft,
-            or Apple.
+            Sign in with your mobile phone number, use your Email ID, or continue with Google.
           </p>
         </div>
 
@@ -227,6 +313,42 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                 <span>Member Access</span>
               </span>
 
+              {/* Primary Method Tabs: Mobile Phone vs Email ID */}
+              <div
+                role="tablist"
+                aria-label="Sign-in method"
+                className="mt-4 grid grid-cols-2 gap-1.5 rounded-xl bg-[#F4ECE3] p-1"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={authMethod === 'mobile'}
+                  onClick={() => switchAuthMethod('mobile')}
+                  className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${
+                    authMethod === 'mobile'
+                      ? 'bg-white text-[#1C1613] shadow-sm'
+                      : 'text-[#574B44] hover:text-[#1C1613]'
+                  }`}
+                >
+                  <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span>Mobile Phone</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={authMethod === 'email'}
+                  onClick={() => switchAuthMethod('email')}
+                  className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${
+                    authMethod === 'email'
+                      ? 'bg-white text-[#1C1613] shadow-sm'
+                      : 'text-[#574B44] hover:text-[#1C1613]'
+                  }`}
+                >
+                  <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span>Email ID</span>
+                </button>
+              </div>
+
               {authError && (
                 <div
                   role="alert"
@@ -236,146 +358,314 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                 </div>
               )}
 
-              {/* Email ID Sign In / Register */}
-              <div className="mt-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-[#F3ECE4] pb-2.5">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1C1613]">
-                    <Mail className="h-3.5 w-3.5 text-[#C2410C]" aria-hidden="true" />
-                    <span>
-                      {emailMode === 'signin'
-                        ? 'Sign in with Email ID'
-                        : 'Register with Email ID'}
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => switchEmailMode(emailMode === 'signin' ? 'register' : 'signin')}
-                    className="text-xs font-semibold text-[#C2410C] hover:underline"
-                  >
-                    {emailMode === 'signin' ? 'Create Account' : 'Existing user? Sign In'}
-                  </button>
-                </div>
+              {/* Tab 1: Sign with Mobile Phone (OTP + Invisible reCAPTCHA) */}
+              {authMethod === 'mobile' && (
+                <form onSubmit={handleMobileOtpSubmit} noValidate className="mt-5 space-y-4">
+                  {!pendingPhoneLabel ? (
+                    <>
+                      <div>
+                        <label
+                          htmlFor="auth-mobile"
+                          className="block text-xs font-semibold text-[#1C1613] mb-1.5"
+                        >
+                          Enter Mobile Phone Number
+                        </label>
+                        <div className="flex items-stretch rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] focus-within:border-[#C2410C]">
+                          <label htmlFor="auth-country-code" className="sr-only">
+                            Country code
+                          </label>
+                          <select
+                            id="auth-country-code"
+                            value={countryDialCode}
+                            onChange={(e) => {
+                              setCountryDialCode(e.target.value);
+                              setMobileFieldError(null);
+                            }}
+                            className="rounded-l-lg border-r border-[#EAE1D8] bg-[#F6EFE7] px-2.5 py-2.5 text-xs font-semibold text-[#1C1613] focus:outline-none"
+                          >
+                            {COUNTRY_CODES.map((c) => (
+                              <option key={c.code} value={c.code}>
+                                {c.label}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            id="auth-mobile"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel-national"
+                            value={mobileInput}
+                            onChange={(e) => {
+                              setMobileInput(e.target.value);
+                              setMobileFieldError(null);
+                            }}
+                            placeholder={countryDialCode === '+91' ? '98765 43210' : 'Mobile number'}
+                            className="w-full rounded-r-lg bg-transparent px-3 py-2.5 text-sm font-mono-num text-[#1C1613] placeholder:text-[#8A7B72] focus:outline-none"
+                          />
+                        </div>
+                        {mobileFieldError ? (
+                          <p className="mt-1.5 text-xs text-[#B91C1C]">{mobileFieldError}</p>
+                        ) : (
+                          <p className="mt-1.5 text-[11px] text-[#6E6058]">
+                            We&apos;ll send a 6-digit SMS verification code to sign in with your
+                            mobile phone.
+                          </p>
+                        )}
+                      </div>
 
-                {resetSentMessage && (
-                  <div
-                    role="status"
-                    className="rounded-xl border border-[#C6DFCB] bg-[#F3FAF5] p-3 text-xs text-[#1E462A]"
-                  >
-                    {resetSentMessage}
-                  </div>
-                )}
-
-                <form onSubmit={handleEmailSubmit} noValidate className="space-y-3.5">
-                  {emailMode === 'register' && (
-                    <div>
-                      <label
-                        htmlFor="auth-email-name"
-                        className="block text-xs font-semibold text-[#1C1613] mb-1"
+                      <button
+                        id="sign-in-button"
+                        type="submit"
+                        disabled={isSigningIn}
+                        className="w-full rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412] disabled:opacity-60"
                       >
-                        Full Name
-                      </label>
-                      <input
-                        id="auth-email-name"
-                        type="text"
-                        autoComplete="name"
-                        value={emailFullName}
-                        onChange={(e) => setEmailFullName(e.target.value)}
-                        placeholder="Your full name"
-                        className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
-                      />
-                      {emailErrors.fullName && (
-                        <p className="mt-1 text-xs text-[#B91C1C]">{emailErrors.fullName}</p>
-                      )}
+                        {isSigningIn ? 'Sending Code...' : 'Sign In with Mobile Phone'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="rounded-xl border border-[#C6DFCB] bg-[#F3FAF5] px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs text-[#1E462A]">
+                        <div>
+                          <span>SMS code sent to </span>
+                          <span className="font-mono-num font-bold text-[#1C1613]">
+                            {pendingPhoneLabel}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOtpInput('');
+                            setMobileFieldError(null);
+                            onResetPhoneOtp();
+                          }}
+                          className="font-semibold text-[#C2410C] hover:underline"
+                        >
+                          Change
+                        </button>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="auth-otp"
+                          className="block text-xs font-semibold text-[#1C1613] mb-1.5"
+                        >
+                          6-Digit SMS Verification Code
+                        </label>
+                        <input
+                          id="auth-otp"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          autoFocus
+                          autoComplete="one-time-code"
+                          value={otpInput}
+                          onChange={(e) => {
+                            setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6));
+                            setMobileFieldError(null);
+                          }}
+                          placeholder="••••••"
+                          className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-base tracking-[0.35em] font-mono-num text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                        />
+                        {mobileFieldError && (
+                          <p className="mt-1 text-xs text-[#B91C1C]">{mobileFieldError}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="auth-otp-name"
+                          className="block text-xs font-semibold text-[#1C1613] mb-1.5"
+                        >
+                          Your Name{' '}
+                          <span className="font-normal text-[#6E6058]">
+                            (optional for new accounts)
+                          </span>
+                        </label>
+                        <input
+                          id="auth-otp-name"
+                          type="text"
+                          autoComplete="name"
+                          value={otpNameInput}
+                          onChange={(e) => setOtpNameInput(e.target.value)}
+                          placeholder="Aarav Sharma"
+                          className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-2.5">
+                        <button
+                          type="submit"
+                          disabled={isSigningIn}
+                          className="flex-1 rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412] disabled:opacity-60"
+                        >
+                          {isSigningIn ? 'Verifying...' : 'Verify & Sign In'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSigningIn || resendCooldown > 0}
+                          onClick={async () => {
+                            const sent = await onSendPhoneOtp(
+                              pendingPhoneLabel,
+                              recaptchaContainerRef.current,
+                              countryDialCode
+                            );
+                            if (sent) {
+                              setResendCooldown(30);
+                            }
+                          }}
+                          className="rounded-lg border border-[#D8CEC4] bg-white px-4 py-3 text-xs font-semibold text-[#1C1613] hover:border-[#1C1613] disabled:opacity-60 tabular-nums"
+                        >
+                          {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  <div id="recaptcha-container" ref={recaptchaContainerRef} className="min-h-[1px]" />
+                </form>
+              )}
+
+              {/* Tab 2: Email ID Sign In / Register */}
+              {authMethod === 'email' && (
+                <div className="mt-5 space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#F3ECE4] pb-2.5">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1C1613]">
+                      <Mail className="h-3.5 w-3.5 text-[#C2410C]" aria-hidden="true" />
+                      <span>
+                        {emailMode === 'signin'
+                          ? 'Sign in with Email ID'
+                          : 'Register with Email ID'}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => switchEmailMode(emailMode === 'signin' ? 'register' : 'signin')}
+                      className="text-xs font-semibold text-[#C2410C] hover:underline"
+                    >
+                      {emailMode === 'signin' ? 'Create Account' : 'Existing user? Sign In'}
+                    </button>
+                  </div>
+
+                  {resetSentMessage && (
+                    <div
+                      role="status"
+                      className="rounded-xl border border-[#C6DFCB] bg-[#F3FAF5] p-3 text-xs text-[#1E462A]"
+                    >
+                      {resetSentMessage}
                     </div>
                   )}
 
-                  <div>
-                    <label
-                      htmlFor="auth-email"
-                      className="block text-xs font-semibold text-[#1C1613] mb-1"
-                    >
-                      Email ID
-                    </label>
-                    <input
-                      id="auth-email"
-                      type="email"
-                      autoComplete="email"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
-                    />
-                    {emailErrors.email && (
-                      <p className="mt-1 text-xs text-[#B91C1C]">{emailErrors.email}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label
-                        htmlFor="auth-password"
-                        className="block text-xs font-semibold text-[#1C1613]"
-                      >
-                        Password
-                      </label>
-                      {emailMode === 'signin' && (
-                        <button
-                          type="button"
-                          onClick={handleForgotPassword}
-                          disabled={isSigningIn}
-                          className="text-[11px] font-semibold text-[#C2410C] hover:underline disabled:opacity-60"
+                  <form onSubmit={handleEmailSubmit} noValidate className="space-y-3.5">
+                    {emailMode === 'register' && (
+                      <div>
+                        <label
+                          htmlFor="auth-email-name"
+                          className="block text-xs font-semibold text-[#1C1613] mb-1"
                         >
-                          Forgot password?
-                        </button>
+                          Full Name
+                        </label>
+                        <input
+                          id="auth-email-name"
+                          type="text"
+                          autoComplete="name"
+                          value={emailFullName}
+                          onChange={(e) => setEmailFullName(e.target.value)}
+                          placeholder="Your full name"
+                          className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                        />
+                        {emailErrors.fullName && (
+                          <p className="mt-1 text-xs text-[#B91C1C]">{emailErrors.fullName}</p>
+                        )}
+                      </div>
+                    )}
+
+                    <div>
+                      <label
+                        htmlFor="auth-email"
+                        className="block text-xs font-semibold text-[#1C1613] mb-1"
+                      >
+                        Email ID
+                      </label>
+                      <input
+                        id="auth-email"
+                        type="email"
+                        autoComplete="email"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                      />
+                      {emailErrors.email && (
+                        <p className="mt-1 text-xs text-[#B91C1C]">{emailErrors.email}</p>
                       )}
                     </div>
-                    <div className="relative">
-                      <input
-                        id="auth-password"
-                        type={showPassword ? 'text' : 'password'}
-                        autoComplete={
-                          emailMode === 'signin' ? 'current-password' : 'new-password'
-                        }
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        placeholder="Minimum 6 characters"
-                        className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] pl-3 pr-10 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#6E6058] hover:text-[#1C1613]"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" aria-hidden="true" />
-                        ) : (
-                          <Eye className="h-4 w-4" aria-hidden="true" />
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label
+                          htmlFor="auth-password"
+                          className="block text-xs font-semibold text-[#1C1613]"
+                        >
+                          Password
+                        </label>
+                        {emailMode === 'signin' && (
+                          <button
+                            type="button"
+                            onClick={handleForgotPassword}
+                            disabled={isSigningIn}
+                            className="text-[11px] font-semibold text-[#C2410C] hover:underline disabled:opacity-60"
+                          >
+                            Forgot password?
+                          </button>
                         )}
-                      </button>
+                      </div>
+                      <div className="relative">
+                        <input
+                          id="auth-password"
+                          type={showPassword ? 'text' : 'password'}
+                          autoComplete={
+                            emailMode === 'signin' ? 'current-password' : 'new-password'
+                          }
+                          value={passwordInput}
+                          onChange={(e) => setPasswordInput(e.target.value)}
+                          placeholder="Minimum 6 characters"
+                          className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] pl-3 pr-10 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#6E6058] hover:text-[#1C1613]"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" aria-hidden="true" />
+                          ) : (
+                            <Eye className="h-4 w-4" aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
+                      {emailErrors.password && (
+                        <p className="mt-1 text-xs text-[#B91C1C]">{emailErrors.password}</p>
+                      )}
                     </div>
-                    {emailErrors.password && (
-                      <p className="mt-1 text-xs text-[#B91C1C]">{emailErrors.password}</p>
-                    )}
-                  </div>
 
-                  <button
-                    type="submit"
-                    disabled={isSigningIn}
-                    className="w-full rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412] disabled:opacity-60"
-                  >
-                    {isSigningIn
-                      ? emailMode === 'signin'
-                        ? 'Signing In...'
-                        : 'Creating Account...'
-                      : emailMode === 'signin'
-                      ? 'Sign In with Email ID'
-                      : 'Create Account'}
-                  </button>
-                </form>
-              </div>
+                    <button
+                      type="submit"
+                      disabled={isSigningIn}
+                      className="w-full rounded-lg bg-[#C2410C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#9A3412] disabled:opacity-60"
+                    >
+                      {isSigningIn
+                        ? emailMode === 'signin'
+                          ? 'Signing In...'
+                          : 'Creating Account...'
+                        : emailMode === 'signin'
+                        ? 'Sign In with Email ID'
+                        : 'Create Account'}
+                    </button>
+                  </form>
+                </div>
+              )}
 
-              {/* Divider + Social Sign-In (Google, Microsoft, Apple) */}
+              {/* Divider + Social Sign-In (Google) */}
               <div className="mt-6">
                 <div className="relative flex items-center py-2">
                   <div className="flex-grow border-t border-[#EAE1D8]" />
@@ -385,7 +675,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                   <div className="flex-grow border-t border-[#EAE1D8]" />
                 </div>
 
-                <div className="mt-2 space-y-2.5">
+                <div className="mt-2">
                   <button
                     type="button"
                     onClick={onSignInWithGoogle}
@@ -399,37 +689,6 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
                       />
                     </svg>
                     <span>Continue with Google</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={onSignInWithMicrosoft}
-                    disabled={isSigningIn}
-                    className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-[#D8CEC4] bg-white px-5 py-2.5 text-sm font-semibold text-[#1C1613] transition-colors hover:border-[#1C1613] hover:bg-[#FCF9F5] disabled:opacity-60"
-                  >
-                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 23 23" aria-hidden="true">
-                      <rect x="1" y="1" width="10" height="10" fill="#F25022" />
-                      <rect x="12" y="1" width="10" height="10" fill="#7FBA00" />
-                      <rect x="1" y="12" width="10" height="10" fill="#00A4EF" />
-                      <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
-                    </svg>
-                    <span>Continue with Microsoft</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={onSignInWithApple}
-                    disabled={isSigningIn}
-                    className="w-full inline-flex items-center justify-center gap-3 rounded-lg bg-[#1C1613] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#332924] disabled:opacity-60"
-                  >
-                    <svg
-                      className="h-4 w-4 shrink-0 fill-current"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.613 0 2.886.06 4.374 2.19-.13.09-2.383 1.37-2.383 4.19 0 3.26 2.854 4.42 2.955 4.45z" />
-                    </svg>
-                    <span>Continue with Apple</span>
                   </button>
                 </div>
               </div>
@@ -516,7 +775,7 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
             </div>
 
             <p className="mt-6 pt-4 border-t border-white/15 text-xs text-[#DDD3CC]">
-              Sign in with Email ID, Google, Microsoft, or Apple · Protected by private owner-only
+              Sign in with Mobile Phone, Email ID, or Google · Protected by private owner-only
               account storage.
             </p>
           </div>
@@ -525,10 +784,12 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
     );
   }
 
-  const primaryIdentifier = authUser.email || profile?.email || '';
+  const primaryIdentifier =
+    authUser.phoneNumber || authUser.email || profile?.phoneNumber || profile?.email || '';
   const initials = (
     profile?.displayName ||
     authUser.displayName ||
+    authUser.phoneNumber ||
     authUser.email ||
     'K'
   )
@@ -670,21 +931,40 @@ export const CustomerAuthView: React.FC<CustomerAuthViewProps> = ({
               )}
             </div>
 
-            <div>
-              <label htmlFor="prof-email" className="block text-xs font-semibold text-[#1C1613] mb-1">
-                Email ID
-              </label>
-              <input
-                id="prof-email"
-                type="email"
-                value={profileEmail}
-                onChange={(e) => setProfileEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
-              />
-              {formErrors.email && (
-                <p className="mt-1 text-xs text-[#B91C1C]">{formErrors.email}</p>
-              )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="prof-email" className="block text-xs font-semibold text-[#1C1613] mb-1">
+                  Email ID
+                </label>
+                <input
+                  id="prof-email"
+                  type="email"
+                  value={profileEmail}
+                  onChange={(e) => setProfileEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                />
+                {formErrors.email && (
+                  <p className="mt-1 text-xs text-[#B91C1C]">{formErrors.email}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="prof-phone" className="block text-xs font-semibold text-[#1C1613] mb-1">
+                  Mobile Phone
+                </label>
+                <input
+                  id="prof-phone"
+                  type="tel"
+                  value={profilePhone}
+                  onChange={(e) => setProfilePhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full rounded-lg border border-[#EAE1D8] bg-[#FCF9F5] px-3 py-2.5 text-sm font-mono-num text-[#1C1613] focus:border-[#C2410C] focus:outline-none"
+                />
+                {formErrors.phoneNumber && (
+                  <p className="mt-1 text-xs text-[#B91C1C]">{formErrors.phoneNumber}</p>
+                )}
+              </div>
             </div>
 
             <div>

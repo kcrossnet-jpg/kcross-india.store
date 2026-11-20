@@ -298,9 +298,12 @@ test('phone normalization, email auth validation, and auth error mapping work ac
   });
   assert.deepEqual(goodSignIn, {});
 
-  assert.ok(mapFirebaseAuthError('auth/operation-not-allowed').includes('Microsoft'));
-  assert.ok(mapFirebaseAuthError('auth/operation-not-allowed').includes('Apple'));
-  assert.ok(mapFirebaseAuthError('auth/account-exists-with-different-credential').includes('Apple'));
+  assert.ok(mapFirebaseAuthError('auth/operation-not-allowed').includes('Phone'));
+  assert.ok(mapFirebaseAuthError('auth/operation-not-allowed').includes('Google'));
+  assert.ok(mapFirebaseAuthError('auth/billing-not-enabled').includes('Blaze plan'));
+  assert.ok(mapFirebaseAuthError('auth/invalid-app-credential', 'kcrossindia.store').includes('kcrossindia.store'));
+  assert.ok(mapFirebaseAuthError('auth/invalid-verification-code').includes('OTP'));
+  assert.ok(mapFirebaseAuthError('auth/account-exists-with-different-credential').includes('Google'));
   assert.ok(mapFirebaseAuthError('auth/app-not-authorized', 'kcrossindia.store').includes('kcrossindia.store'));
   assert.ok(mapFirebaseAuthError('auth/web-storage-unsupported').includes('storage'));
   assert.ok(mapFirebaseAuthError('auth/popup-blocked').includes('popups'));
